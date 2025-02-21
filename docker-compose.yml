@@ -1,0 +1,224 @@
+---
+services:
+  traefik:
+    image: 'registry.coolblock.com/coolblock/panel-proxy:__PANEL_PROXY_VERSION__'
+    command:
+      - '--global.checkNewVersion=false'
+      - '--global.sendAnonymousUsage=false'
+      - '--api.insecure=true'
+      - '--api.dashboard=true'
+      - '--providers.docker'
+      - '--accesslog=true'
+      - '--accesslog.format=json'
+      - '--entrypoints.web.address=:80'
+      - '--entrypoints.websecure.address=:443'
+      - '--entrypoints.influxdb.address=:8086'
+      - '--entrypoints.fastapi.address=:8443'
+    ports:
+      - '80:80'
+      - '443:443'
+      - '8086:8086'
+      - '8443:8443'
+    volumes:
+      - '/var/run/docker.sock:/var/run/docker.sock:ro'
+    networks:
+      - 'coolblock-panel'
+    restart: 'unless-stopped'
+
+  app:
+    image: 'registry.coolblock.com/coolblock/panel-web:__PANEL_WEB_VERSION__'
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.frontend.rule=PathPrefix(`/`)'
+      - 'traefik.http.routers.frontend.entrypoints=websecure'
+      - 'traefik.http.routers.frontend.tls=true'
+      - 'traefik.http.routers.frontend-redirect.rule=PathPrefix(`/`)'
+      - 'traefik.http.routers.frontend-redirect.entrypoints=web'
+      - 'traefik.http.routers.frontend-redirect.middlewares=redirect-to-https'
+      - 'traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https'
+      - 'traefik.http.services.frontend.loadbalancer.server.port=3000'
+    env_file:
+      - '.env'
+    depends_on:
+      - 'mysql'
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:3000']
+      interval: '30s'
+      timeout: '5s'
+      retries: 3
+    volumes:
+      - './.env:/app/.env:ro'
+    networks:
+      - 'coolblock-panel'
+    deploy:
+      replicas: 3
+      restart_policy:
+        condition: 'on-failure'
+
+  mysql:
+    image: 'mysql:9'
+    env_file:
+      - '.env'
+    volumes:
+      - 'coolblock-panel-web-database-data:/var/lib/mysql:rw'
+      - './scripts/init.sql:/docker-entrypoint-initdb.d/init.sql:ro'
+    ports:
+      - '127.0.0.1:3306:3306'
+    networks:
+      - 'coolblock-panel'
+
+  fastapi:
+    image: 'registry.coolblock.com/coolblock/panel-api:__PANEL_API_VERSION__'
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.fastapi.rule=PathPrefix(`/backend`)'
+      - 'traefik.http.routers.fastapi.entrypoints=fastapi'
+      - 'traefik.http.routers.fastapi.tls=true'
+      - 'traefik.http.services.fastapi.loadbalancer.server.port=8080'
+    env_file:
+      - '.env'
+    depends_on:
+      - 'mysql'
+      - 'redis'
+      - 'influxdb'
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:8080/health']
+      interval: '30s'
+      timeout: '5s'
+      retries: 3
+    networks:
+      - 'coolblock-panel'
+    deploy:
+      replicas: 3
+      restart_policy:
+        condition: 'on-failure'
+
+  celery-worker-influxdb-read:
+    image: 'coolblock-panel-api:latest'
+    command: ['celery', '-A', 'app.tasks.celery_app.celery_app', 'worker', '--loglevel=info', '--concurrency=8', '-E', '-Q', 'influxdb.read']
+    env_file:
+      - '.env'
+    depends_on:
+      - 'mysql'
+      - 'redis'
+      - 'influxdb'
+    networks:
+      - 'coolblock-panel'
+    deploy:
+      replicas: 3
+      restart_policy:
+        condition: 'on-failure'
+
+  celery-worker-influxdb-write:
+    image: 'coolblock-panel-api:latest'
+    command: ['celery', '-A', 'app.tasks.celery_app.celery_app', 'worker', '--loglevel=info', '--concurrency=1', '-E', '-Q', 'influxdb.write']
+    env_file:
+      - '.env'
+    depends_on:
+      - 'mysql'
+      - 'redis'
+      - 'influxdb'
+    networks:
+      - 'coolblock-panel'
+    deploy:
+      replicas: 3
+      restart_policy:
+        condition: 'on-failure'
+
+  celery-worker-plc-read:
+    image: 'coolblock-panel-api:latest'
+    command: ['celery', '-A', 'app.tasks.celery_app.celery_app', 'worker', '--loglevel=info', '--concurrency=4', '-E', '-Q', 'plc.read']
+    env_file:
+      - '.env'
+    depends_on:
+      - 'mysql'
+      - 'redis'
+      - 'influxdb'
+    networks:
+      - 'coolblock-panel'
+    deploy:
+      replicas: 3
+      restart_policy:
+        condition: 'on-failure'
+
+  celery-worker-plc-write:
+    image: 'coolblock-panel-api:latest'
+    command: ['celery', '-A', 'app.tasks.celery_app.celery_app', 'worker', '--loglevel=info', '--concurrency=1', '-E', '-Q', 'plc.write']
+    env_file:
+      - '.env'
+    depends_on:
+      - 'mysql'
+      - 'redis'
+      - 'influxdb'
+    networks:
+      - 'coolblock-panel'
+    deploy:
+      replicas: 3
+      restart_policy:
+        condition: 'on-failure'
+
+  celery-beat:
+    image: 'coolblock-panel-api:latest'
+    command: ['celery', '-A', 'app.tasks.celery_app.celery_app', 'beat', '--loglevel=info']
+    env_file:
+      - '.env'
+    depends_on:
+      - 'mysql'
+      - 'redis'
+      - 'influxdb'
+    networks:
+      - 'coolblock-panel'
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: 'on-failure'
+
+  redis:
+    image: 'redis:latest'
+    # command: ['redis-server', '--appendonly', 'yes']
+    # volumes:
+    #   - 'redis-data:/data'
+    networks:
+      - 'coolblock-panel'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: '10s'
+      timeout: '5s'
+      retries: 5
+    restart: 'unless-stopped'
+
+  flower:
+    image: 'mher/flower:latest'
+    env_file:
+      - '.env'
+    depends_on:
+      - 'redis'
+    networks:
+      - 'coolblock-panel'
+    restart: 'unless-stopped'
+
+  influxdb:
+    image: 'influxdb:2'
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.influxdb.rule=PathPrefix(`/`)'
+      - 'traefik.http.routers.influxdb.entrypoints=influxdb'
+      - 'traefik.http.routers.influxdb.tls=true'
+      - 'traefik.http.services.influxdb.loadbalancer.server.port=8086'
+    env_file:
+      - '.env'
+    # volumes:
+    #   - 'influxdb-data:/var/lib/influxdb'
+    networks:
+      - 'coolblock-panel'
+    restart: 'unless-stopped'
+
+volumes:
+  coolblock-panel-web-database-data:
+  # redis-data:
+  # influxdb-data:
+
+networks:
+  coolblock-panel:
+    external: true
+
