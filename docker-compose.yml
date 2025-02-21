@@ -94,7 +94,7 @@ services:
         condition: 'on-failure'
 
   celery-worker-influxdb-read:
-    image: 'coolblock-panel-api:latest'
+    image: 'registry.coolblock.com/coolblock/panel-api:__PANEL_API_VERSION__'
     command: ['celery', '-A', 'app.tasks.celery_app.celery_app', 'worker', '--loglevel=info', '--concurrency=8', '-E', '-Q', 'influxdb.read']
     env_file:
       - '.env'
@@ -110,7 +110,7 @@ services:
         condition: 'on-failure'
 
   celery-worker-influxdb-write:
-    image: 'coolblock-panel-api:latest'
+    image: 'registry.coolblock.com/coolblock/panel-api:__PANEL_API_VERSION__'
     command: ['celery', '-A', 'app.tasks.celery_app.celery_app', 'worker', '--loglevel=info', '--concurrency=1', '-E', '-Q', 'influxdb.write']
     env_file:
       - '.env'
@@ -126,7 +126,7 @@ services:
         condition: 'on-failure'
 
   celery-worker-plc-read:
-    image: 'coolblock-panel-api:latest'
+    image: 'registry.coolblock.com/coolblock/panel-api:__PANEL_API_VERSION__'
     command: ['celery', '-A', 'app.tasks.celery_app.celery_app', 'worker', '--loglevel=info', '--concurrency=4', '-E', '-Q', 'plc.read']
     env_file:
       - '.env'
@@ -142,7 +142,7 @@ services:
         condition: 'on-failure'
 
   celery-worker-plc-write:
-    image: 'coolblock-panel-api:latest'
+    image: 'registry.coolblock.com/coolblock/panel-api:__PANEL_API_VERSION__'
     command: ['celery', '-A', 'app.tasks.celery_app.celery_app', 'worker', '--loglevel=info', '--concurrency=1', '-E', '-Q', 'plc.write']
     env_file:
       - '.env'
@@ -158,7 +158,7 @@ services:
         condition: 'on-failure'
 
   celery-beat:
-    image: 'coolblock-panel-api:latest'
+    image: 'registry.coolblock.com/coolblock/panel-api:__PANEL_API_VERSION__'
     command: ['celery', '-A', 'app.tasks.celery_app.celery_app', 'beat', '--loglevel=info']
     env_file:
       - '.env'
@@ -207,6 +207,10 @@ services:
       - 'traefik.http.services.influxdb.loadbalancer.server.port=8086'
     env_file:
       - '.env'
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: 'setup'
+      DOCKER_INFLUXDB_INIT_ORG: 'coolblock-org'
+      DOCKER_INFLUXDB_INIT_BUCKET: 'coolblock-bucket'
     # volumes:
     #   - 'influxdb-data:/var/lib/influxdb'
     networks:
