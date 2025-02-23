@@ -238,6 +238,7 @@ function install_panel() {
     declare old_env=""
     declare jwt_secret=""
     declare mysql_password=""
+    declare mysql_root_password=""
     declare influxdb_password=""
     declare influxdb_token=""
 
@@ -302,12 +303,14 @@ function install_panel() {
     if [ -f "${pdir}/.env.bak" ]; then
         old_env=$(cat "${pdir}/.env.bak")
         jwt_secret=$(awk -F= '/^CB_PANEL_JWT_SECRET/{print $2}' <<< "${old_env}" | tr -d "'\n")
-        mysql_password=$(awk -F= '/^MYSQL_ROOT_PASSWORD/{print $2}' <<< "${old_env}" | tr -d "'\n")
+        mysql_password=$(awk -F= '/^MYSQL_PASSWORD/{print $2}' <<< "${old_env}" | tr -d "'\n")
+        mysql_root_password=$(awk -F= '/^MYSQL_ROOT_PASSWORD/{print $2}' <<< "${old_env}" | tr -d "'\n")
         influxdb_password=$(awk -F= '/^DOCKER_INFLUXDB_INIT_PASSWORD/{print $2}' <<< "${old_env}" | tr -d "'\n")
         influxdb_token=$(awk -F= '/^DOCKER_INFLUXDB_INIT_ADMIN_TOKEN/{print $2}' <<< "${old_env}" | tr -d "'\n")
     else
         jwt_secret=$(openssl rand -base64 128 | tr -d '\n')
         mysql_password=$(openssl rand -base64 16 | tr -d '\n')
+        mysql_root_password=$(openssl rand -base64 16 | tr -d '\n')
         influxdb_password=$(openssl rand -base64 16 | tr -d '\n')
         influxdb_token=$(openssl rand -base64 32 | tr -d '\n')
     fi
@@ -324,7 +327,8 @@ function install_panel() {
         -e "s#__PLC_MODEL__#${plc_model}#g" \
         -e "s#__TANK_SERIAL_NUMBER__#${serial_number}#g" \
         -e "s#__JWT_SECRET__#${jwt_secret}#g" \
-        -e "s#__MYSQL_ROOT_PASSWORD__#${mysql_password}#g" \
+        -e "s#__MYSQL_PASSWORD__#${mysql_password}#g" \
+        -e "s#__MYSQL_ROOT_PASSWORD__#${mysql_root_password}#g" \
         -e "s#__INFLUXDB_PASSWORD__#${influxdb_password}#g" \
         -e "s#__INFLUXDB_TOKEN__#${influxdb_token}#g" \
         "${pdir}/.env"
@@ -340,7 +344,7 @@ function install_panel() {
     {
         echo "[client]"
         echo "user=root"
-        echo "password=${mysql_password}"
+        echo "password=${mysql_root_password}"
         echo "host=localhost"
         echo "protocol=tcp"
     } > /home/coolblock/.my.cnf
@@ -358,7 +362,7 @@ function install_panel() {
             sudo -u coolblock mysql --defaults-file=/home/coolblock/.my.cnf coolblock-panel -Bsqe 'SELECT updated_at from users where id=1' && break
         done
 
-        sudo -u coolblock mysql --defaults-file=/home/coolblock/.my.cnf < "${pdir}/backup/coolblock-panel_users.sql"
+        sudo -u coolblock mysql --defaults-file=/home/coolblock/.my.cnf coolblock-panel < "${pdir}/backup/coolblock-panel_users.sql"
         sudo -u coolblock docker compose -f "${pdir}/docker-compose.yml" down
     fi
 
