@@ -18,7 +18,7 @@ services:
       - '80:80'
       - '443:443'
       - '8086:8086'
-      - '8443:8443'
+      # - '8443:8443'
     volumes:
       - '/var/run/docker.sock:/var/run/docker.sock:ro'
     networks:
@@ -46,8 +46,6 @@ services:
       interval: '30s'
       timeout: '5s'
       retries: 3
-    volumes:
-      - './.env:/app/.env:ro'
     networks:
       - 'coolblock-panel'
     deploy:
@@ -61,7 +59,7 @@ services:
       - '.env'
     volumes:
       - 'coolblock-panel-web-database-data:/var/lib/mysql:rw'
-      - './scripts/init.sql:/docker-entrypoint-initdb.d/init.sql:ro'
+      - './init.sql:/docker-entrypoint-initdb.d/init.sql:ro'
     ports:
       - '127.0.0.1:3306:3306'
     networks:
@@ -225,4 +223,3 @@ volumes:
 networks:
   coolblock-panel:
     external: true
-

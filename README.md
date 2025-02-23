@@ -9,7 +9,7 @@
 2. Run the bootstrap script:
 
    ```bash
-   curl -fsSL https://downloads.coolblock.com/panel/install.sh | bash
+   curl -fsSL https://downloads.coolblock.com/panel/install.sh | bash -s -- --tank-model <tank_model> --serial-number <serial_number> --license-key <license_key>
    ```
 
 3. Login with the default credentials (Should be changed afterwards `Gear Icon -> Change Password` and `Gear Icon -> Change PIN`)

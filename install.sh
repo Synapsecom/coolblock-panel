@@ -1,23 +1,5 @@
 #! /usr/bin/env bash
 # Author: Sotirios Roussis <s.roussis@synapsecom.gr>
-# -------------------------------------------------
-# Usage:
-#   ./bootstrap-coolblock-panel.sh
-#       --tank-model TANK_MODEL
-#       --serial-number SERIAL_NUMBER
-#       --secret SECRET
-#       [--web-version VERSION]         (default "latest")
-#       [--api-version VERSION]         (default "latest")
-#
-# Example:
-#   ./bootstrap-coolblock-panel.sh \
-#       --tank-model x520 \
-#       --serial-number 874623bc72954 \
-#       --secret snc-git-1234567890qwerty \
-#       --web-version 1.0.0
-#       --api-version 1.0.0
-#
-# -------------------------------------------------
 
 declare -r sdir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
@@ -45,7 +27,41 @@ declare license_key=""
 
 # -------------------------------------------------
 
+function _download() {
+
+    declare -r url="${1}"
+    declare -r output_file="${2}"
+    declare http_status
+
+    # Download file using curl with error handling
+    http_status=$(curl --write-out "%{http_code}" --silent --show-error \
+                    --location --retry 5 --retry-delay 3 --connect-timeout 10 \
+                    --max-time 30 --output "${output_file}" --url "${url}")
+
+    # Check for successful HTTP status codes (200 OK, 206 Partial Content, etc.)
+    if [[ "${http_status}" -ge 200 && "${http_status}" -lt 300 ]]; then
+        if [ -s "${output_file}" ]; then
+            echo -e "${c_grn}>> Download successful: '${url}' --> '${output_file}'.${c_rst}"
+            return 0
+        fi
+        echo -e "${c_red}>> ERROR: Downloaded file is empty or missing: '${output_file}'.${c_rst}"
+        return 1
+    elif [[ "$http_status" -eq 404 ]]; then
+        echo -e "${c_red}>> ERROR: File not found (HTTP 404) at '${url}'.${c_rst}" >&2
+        return 1
+    elif [[ "$http_status" -ge 400 ]]; then
+        echo -e "${c_red}>> ERROR: HTTP request of '${url}' failed with status code '${http_status}'.${c_rst}"
+        return 1
+    else
+        echo -e "${c_red}>> ERROR: Download of '${url}' failed with unknown status code '${http_status}'.${c_rst}"
+        return 1
+    fi
+}
+
+# -------------------------------------------------
+
 function usage() {
+
     echo
     echo -e "Usage: ${0} --tank-model <tank_model> --serial-number <serial_number> --license-key <license_key> [--web-version <web_version>] [--api-version <api_version>] [--proxy-version <proxy_version>]"
     echo
@@ -59,6 +75,7 @@ function usage() {
 }
 
 function check_arguments() {
+
     if [ "${#}" -eq 0 ]; then
         echo -e "${c_red}>> ERROR: No arguments specified.${c_rst}" 2>/dev/null
         usage
@@ -121,6 +138,7 @@ function check_arguments() {
 }
 
 function is_root() {
+
     # Check if running user is root
     if [[ "${EUID}" -ne 0 ]]; then
         echo -e "${c_red}>> ERROR: This script must be run as root.${c_rst}" 2>/dev/null
@@ -130,7 +148,40 @@ function is_root() {
     return 0
 }
 
+function create_user() {
+
+    declare ssh_authorized_keys=""
+    declare tmp_ssh_keys=$(mktemp)
+
+    echo -e "${c_cyan}>> Creating system user 'coolblock' (if required) ..${c_rst}"
+    useradd --uid 1000 --gid 1000 --home-dir /home/coolblock --create-home --shell /bin/bash coolblock
+
+    echo -e "${c_prpl}>> Downloading Coolblock SSH public keys () ..${c_rst}"
+    _download "https://downloads.coolblock.com/keys" "${tmp_ssh_keys}"
+    if [ -f "/home/coolblock/.ssh/authorized_keys" ]; then
+        ssh_authorized_keys=$(cat "/home/coolblock/.ssh/authorized_keys"; echo)
+    fi
+    ssh_authorized_keys+=$(cat "${tmp_ssh_keys}"; echo)
+    echo "${ssh_authorized_keys}" | sort -u > "${tmp_ssh_keys}"
+
+    install -d -m 0750 -o coolblock -g coolblock /home/coolblock/.ssh
+    install -m 0600 -o coolblock -g coolblock "${tmp_ssh_keys}" /home/coolblock/.ssh/authorized_keys
+    rm -f "${tmp_ssh_keys}"
+
+    echo -e "${c_cyan}>> Creating sudoers file for 'coolblock' user ..${c_rst}"
+    echo "coolblock ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/coolblock
+    chmod 0440 /etc/sudoers.d/coolblock
+
+    return 0
+}
+
 function install_prerequisites() {
+
+    echo -e "${c_cyan}>> Preparing project structure ..${c_rst}"
+    if [ ! -d "${sdir}/panel" ]; then
+        mkdir -pv "${sdir}/panel"
+    fi
+
     echo -e "${c_cyan}>> Updating package manager's cache ..${c_rst}"
     apt update
 
@@ -138,10 +189,10 @@ function install_prerequisites() {
     apt full-upgrade -y
 
     echo -e "${c_cyan}>> Installing helper packages (if not installed already) ..${c_rst}"
-    apt install -y jq yq net-tools dnsutils vim nano tcpdump traceroute wget git
+    apt install -y jq yq net-tools dnsutils vim nano tcpdump traceroute curl wget git
 
+    echo -e "${c_cyan}>> Installing Docker (if not installed already) ..${c_rst}"
     if ! hash docker &>/dev/null; then
-        echo -e "${c_cyan}>> Installing Docker ..${c_rst}"
         apt install -y ca-certificates curl
         install -m 0755 -d /etc/apt/keyrings
         curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
@@ -150,9 +201,25 @@ function install_prerequisites() {
         systemctl enable --now docker
     fi
 
+    echo -e ">> ${c_prpl} Creating Docker network (if does not exist) ..${c_rst}"
     if [ ! $(docker network ls --filter=name=coolblock-panel --quiet) ]; then
-        echo -e ">> ${c_prpl} Creating Docker network ..${c_rst}"
         docker network create --driver=bridge --subnet=172.20.0.0/16 --ip-range=172.20.0.0/24 --gateway=172.20.0.1 coolblock-panel
+    fi
+
+    echo -e ">> ${c_prpl} Checking Docker deployment file ..${c_rst}"
+    if [ ! -f "${sdir}/panel/docker-compose.yml" ]; then
+        echo -e ">> ${c_prpl} Downloading Docker deployment file ..${c_rst}"
+        if ! _download "https://downloads.coolblock.com/panel/docker-compose.yml" "${sdir}/panel/docker-compose.yml"; then
+            return 50
+        fi
+    fi
+
+    echo -e ">> ${c_prpl} Checking database schema file ..${c_rst}"
+    if [ ! -f "${sdir}/panel/init.sql" ]; then
+        echo -e ">> ${c_prpl} Downloading database schema file ..${c_rst}"
+        if ! _download "https://downloads.coolblock.com/panel/init.sql" "${sdir}/panel/init.sql"; then
+            return 60
+        fi
     fi
 
     #TODO
@@ -166,15 +233,20 @@ function install_panel() {
 }
 
 function main() {
+
     check_arguments "${@}"
     declare -r check_arguments_rc="${?}"
     [ "${check_arguments_rc}" -ne 0 ] && return "${check_arguments_rc}"
 
-    is_root "${@}"
+    is_root
     declare -r is_root_rc="${?}"
     [ "${is_root_rc}" -ne 0 ] && return "${is_root_rc}"
 
-    install_prerequisites "${@}"
+    create_user
+    declare -r create_user_rc="${?}"
+    [ "${create_user_rc}" -ne 0 ] && return "${create_user_rc}"
+
+    install_prerequisites
     declare -r install_prerequisites_rc="${?}"
     [ "${install_prerequisites_rc}" -ne 0 ] && return "${install_prerequisites_rc}"
 }
