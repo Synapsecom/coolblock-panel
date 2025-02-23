@@ -74,8 +74,10 @@
 The stack exposes a healthcheck endpoint at `/backend/health` that accepts an optional argument `?metrics=1` which will expose all services metrics for you.
 We highly recommend you to scrape/parse this endpoint in order to monitor multiple installations with ease.
 
-Example response with telemetry disabled:
+Example healthcheck response with telemetry disabled:
 
 ```json
 {"redis":{"status":"healthy"},"database":{"influx":{"local":{"status":"healthy"},"cloud":{"status":"unhealthy"}},"mysql":{"status":"healthy"}},"panel":{"status":"healthy"},"internet":{"status":"healthy"},"latency":85.79100000000001}
 ```
+
+The healthcheck endpoint should reply with http status code 200 when `redis`, local `influxdb`, `mysql` and `panel` are healthy, otherwise it responds with a 5xx status code.
