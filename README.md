@@ -9,10 +9,12 @@
 2. Run the bootstrap script:
 
    ```bash
-   curl -fsSL https://downloads.coolblock.com/panel/install.sh | bash -s -- --tank-model <tank_model> --serial-number <serial_number> --license-key <license_key>
+   curl -fsSL https://downloads.coolblock.com/panel/install.sh | bash -s -- --tank-model <tank_model> --plc-model <plc_model> --serial-number <serial_number> --license-key <license_key>
    ```
 
-3. Login with the default credentials (Should be changed afterwards `Gear Icon -> Change Password` and `Gear Icon -> Change PIN`)
+3. Login with the default credentials
+
+   > Should be changed afterwards `Gear Icon -> Change Password` and `Gear Icon -> Change PIN`
 
    ```plain
    username: admin
@@ -41,6 +43,5 @@
 - Upgrading the services
 
   ```bash
-  # as coolblock user
-  #TODO
+  # as coolblock user, run the installer script as advised by Coolblock staff
   ```

@@ -200,7 +200,13 @@ function install_prerequisites() {
     apt full-upgrade -y
 
     echo -e "${c_cyan}>> Installing helper packages (if not installed already) ..${c_rst}"
-    apt install -y sudo vim nano openssl net-tools dnsutils tcpdump traceroute ca-certificates curl wget git jq yq
+    apt install -y \
+        sudo vim nano \
+        net-tools dnsutils tcpdump traceroute \
+        curl wget \
+        git jq yq \
+        ca-certificates openssl \
+        mariadb-client
 
     return 0
 }
@@ -224,22 +230,18 @@ function install_docker() {
     return 0
 }
 
-function install_bunjs() {
-    echo -e "${c_cyan}>> Installing Bun.js ..${c_rst}"
-    if [ ! -f "/home/coolblock/.bun/bin/bun" ]; then
-        curl -fsSL https://bun.sh/install | sudo -u coolblock bash
-    fi
-    return 0
-}
-
 function install_panel() {
 
+    declare mysql_backup_file=""
+    declare mysql_users_backup_file=""
     declare docker_login=""
     declare old_env=""
     declare jwt_secret=""
     declare mysql_password=""
     declare influxdb_password=""
     declare influxdb_token=""
+
+    umask 027
 
     echo -e "${c_prpl}>> Validating license ..${c_rst}"
     docker_login=$(echo "${license_key}" | sudo -u coolblock docker login --username "${serial_number}" --password-stdin registry.coolblock.com 2>&1)
@@ -249,9 +251,28 @@ function install_panel() {
     fi
     echo -e "${c_grn}>> License is valid.${c_rst}"
 
-    echo -e "${c_cyan}>> Preparing project structure '${pdir}' ..${c_rst}"
-    if [ ! -d "${pdir}" ]; then
-        sudo -u coolblock mkdir -pv "${pdir}"
+    echo -e "${c_prpl}>> Preparing project structure '${pdir}' ..${c_rst}"
+    sudo -u coolblock mkdir -pv "${pdir}/backup"
+
+    echo -e "${c_prpl}>> Backing up MySQL database (if available) .."
+    if [[ -f "/home/coolblock/.my.cnf" && -f "${pdir}/docker-compose.yml" ]]; then
+        sudo -u coolblock docker compose -f "${pdir}/docker-compose.yml" up -d mysql
+        sleep 10
+
+        mysql_backup_file="${pdir}/backup/coolblock-panel_$(date +%Y%m%d_%H%M%S).sql"
+        mysql_users_backup_file="${pdir}/backup/coolblock-panel_users_$(date +%Y%m%d_%H%M%S).sql"
+        sudo -u coolblock mysqldump --defaults-file=/home/coolblock/.my.cnf --databases coolblock-panel > "${mysql_backup_file}"
+        sudo -u coolblock mysqldump --defaults-file=/home/coolblock/.my.cnf --databases coolblock-panel --tables users > "${mysql_users_backup_file}"
+        chown -v coolblock:coolblock "${mysql_backup_file}" "${mysql_users_backup_file}"
+
+        rm -fv "${pdir}/backup/coolblock-panel.sql" "${pdir}/backup/coolblock-panel_users.sql"
+        sudo -u coolblock ln -sv "${mysql_backup_file}" "${pdir}/backup/coolblock-panel.sql"
+        sudo -u coolblock ln -sv "${mysql_users_backup_file}" "${pdir}/backup/coolblock-panel_users.sql"
+    fi
+
+    echo -e "${c_prpl}>> Stopping services (if running) ..${c_rst}"
+    if [ -f "${pdir}/docker-compose.yml" ]; then
+        sudo -u coolblock docker compose -f "${pdir}/docker-compose.yml" down
     fi
 
     echo -e "${c_prpl}>> Downloading Docker deployment file ..${c_rst}"
@@ -266,12 +287,6 @@ function install_panel() {
         -e "s#__PANEL_API_VERSION__#${docker_tags[api]}#g" \
         -e "s#__PANEL_PROXY_VERSION__#${docker_tags[proxy]}#g" \
         "${pdir}/docker-compose.yml"
-
-    echo -e "${c_prpl}>> Downloading database schema file ..${c_rst}"
-    _download "https://downloads.coolblock.com/panel/init.sql" "${pdir}/init.sql" coolblock
-    if [ "${?}" -ne 0 ]; then
-        return 70
-    fi
 
     echo -e "${c_prpl}>> Backing up existing environment file (if available).. ${c_rst}"
     if [ -f "${pdir}/.env" ]; then
@@ -295,18 +310,37 @@ function install_panel() {
     echo -e "${c_prpl}>> Downloading environment file ..${c_rst}"
     _download "https://downloads.coolblock.com/panel/env.tmpl" "${pdir}/.env" coolblock
     if [ "${?}" -ne 0 ]; then
-        return 80
+        return 70
     fi
 
     echo -e "${c_prpl}>> Rendering environment file ..${c_rst}"
-    sed -i
+    sed -i \
         -e "s#__TANK_MODEL__#${tank_model}#g" \
+        -e "s#__PLC_MODEL__#${plc_model}#g" \
         -e "s#__TANK_SERIAL_NUMBER__#${serial_number}#g" \
         -e "s#__JWT_SECRET__#${jwt_secret}#g" \
         -e "s#__MYSQL_ROOT_PASSWORD__#${mysql_password}#g" \
         -e "s#__INFLUXDB_PASSWORD__#${influxdb_password}#g" \
         -e "s#__INFLUXDB_TOKEN__#${influxdb_token}#g" \
         "${pdir}/.env"
+
+    echo -e "${c_prpl}>> Downloading database schema file ..${c_rst}"
+    _download "https://downloads.coolblock.com/panel/init.sql" "${pdir}/init.sql" coolblock
+    if [ "${?}" -ne 0 ]; then
+        return 80
+    fi
+    chmod -v 0644 "${pdir}/init.sql"
+
+    echo -e "${c_prpl}>> Creating database connection profile (/home/coolblock/.my.cnf) ..${c_rst}"
+    {
+        echo "[client]"
+        echo "user=root"
+        echo "password=${mysql_password}"
+        echo "host=localhost"
+        echo "protocol=tcp"
+    } > /home/coolblock/.my.cnf
+    chown -v coolblock:coolblock /home/coolblock/.my.cnf
+    chmod -v 0400 /home/coolblock/.my.cnf
 
     return 0
 }
@@ -332,10 +366,6 @@ function main() {
     create_user
     declare -r create_user_rc="${?}"
     [ "${create_user_rc}" -ne 0 ] && return "${create_user_rc}"
-
-    install_bunjs
-    declare -r install_bunjs_rc="${?}"
-    [ "${install_bunjs_rc}" -ne 0 ] && return "${install_bunjs_rc}"
 
     install_panel
     declare -r install_panel_rc="${?}"
