@@ -64,3 +64,18 @@
   cd panel/
   mysqldump --defaults-file=~/.my.cnf --databases coolblock-panel > adhoc-coolblock-panel_$(date +%Y%m%d_%H%M%S).sql
   ```
+
+- Connecting to time-series database
+
+  Open your browser and navigate to [https://panel-pc:8086](https://panel-pc:8086).
+
+## Monitoring
+
+The stack exposes a healthcheck endpoint at `/backend/health` that accepts an optional argument `?metrics=1` which will expose all services metrics for you.
+We highly recommend you to scrape/parse this endpoint in order to monitor multiple installations with ease.
+
+Example response with telemetry disabled:
+
+```json
+{"redis":{"status":"healthy"},"database":{"influx":{"local":{"status":"healthy"},"cloud":{"status":"unhealthy"}},"mysql":{"status":"healthy"}},"panel":{"status":"healthy"},"internet":{"status":"healthy"},"latency":85.79100000000001}
+```
