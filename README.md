@@ -72,7 +72,7 @@
 ## Monitoring
 
 The stack exposes a healthcheck endpoint at `/backend/health` that accepts an optional argument `?metrics=1` which will expose all services metrics for you.
-We highly recommend you to scrape/parse this endpoint in order to monitor multiple installations with ease.
+We highly recommend you to scrape/parse this endpoint (with zabbix/nagios etc..) in order to monitor multiple installations with ease.
 
 Example healthcheck response with telemetry disabled:
 
