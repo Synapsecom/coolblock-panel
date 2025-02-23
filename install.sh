@@ -154,10 +154,13 @@ function create_user() {
     declare tmp_ssh_keys=$(mktemp)
 
     echo -e "${c_cyan}>> Creating system user 'coolblock' (if required) ..${c_rst}"
-    useradd --uid 1000 --gid 1000 --home-dir /home/coolblock --create-home --shell /bin/bash coolblock
+    useradd --home-dir /home/coolblock --create-home --shell /bin/bash coolblock
 
-    echo -e "${c_prpl}>> Downloading Coolblock SSH public keys () ..${c_rst}"
-    _download "https://downloads.coolblock.com/keys" "${tmp_ssh_keys}"
+    echo -e "${c_prpl}>> Downloading Coolblock SSH public keys (will merge existing) ..${c_rst}"
+    if ! _download "https://downloads.coolblock.com/keys" "${tmp_ssh_keys}"; then
+        return 1
+    fi
+
     if [ -f "/home/coolblock/.ssh/authorized_keys" ]; then
         ssh_authorized_keys=$(cat "/home/coolblock/.ssh/authorized_keys"; echo)
     fi
