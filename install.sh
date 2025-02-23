@@ -257,7 +257,12 @@ function install_panel() {
     echo -e "${c_prpl}>> Backing up MySQL database (if available) .."
     if [[ -f "/home/coolblock/.my.cnf" && -f "${pdir}/docker-compose.yml" ]]; then
         sudo -u coolblock docker compose -f "${pdir}/docker-compose.yml" up -d mysql
-        sleep 10
+        echo -e "${c_ylw}>> Waiting for MySQL database ..${c_rst}"
+        while :; do
+            sleep 1
+            echo -e "${c_grn}>> SELECT updated_at from users where id=1${c_rst}"
+            sudo -u coolblock mysql --defaults-file=/home/coolblock/.my.cnf coolblock-panel -Bsqe 'SELECT updated_at from users where id=1' && break
+        done
 
         mysql_backup_file="${pdir}/backup/coolblock-panel_$(date +%Y%m%d_%H%M%S).sql"
         mysql_users_backup_file="${pdir}/backup/coolblock-panel_users_$(date +%Y%m%d_%H%M%S).sql"
@@ -342,6 +347,21 @@ function install_panel() {
     chown -v coolblock:coolblock /home/coolblock/.my.cnf
     chmod -v 0400 /home/coolblock/.my.cnf
 
+    echo -e "${c_prpl}>> Patching MySQL database and restoring users (if applicable) ..${c_rst}"
+    if [[ -f "${pdir}/backup/coolblock-panel.sql" && -f "${pdir}/backup/coolblock-panel_users.sql" ]]; then
+        sudo -u coolblock docker volume rm panel_coolblock-panel-web-database-data
+        sudo -u coolblock docker compose -f "${pdir}/docker-compose.yml" up -d mysql
+        echo -e "${c_ylw}>> Waiting for MySQL database ..${c_rst}"
+        while :; do
+            sleep 1
+            echo -e "${c_grn}>> SELECT updated_at from users where id=1${c_rst}"
+            sudo -u coolblock mysql --defaults-file=/home/coolblock/.my.cnf coolblock-panel -Bsqe 'SELECT updated_at from users where id=1' && break
+        done
+
+        sudo -u coolblock mysql --defaults-file=/home/coolblock/.my.cnf < "${pdir}/backup/coolblock-panel_users.sql"
+        sudo -u coolblock docker compose -f "${pdir}/docker-compose.yml" down
+    fi
+
     return 0
 }
 
@@ -373,8 +393,6 @@ function main() {
 
     return 0
 }
-
-# -------------------------------------------------
 
 main "${@}"
 exit "${?}"
