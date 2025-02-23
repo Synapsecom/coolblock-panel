@@ -13,12 +13,12 @@ services:
       - '--entrypoints.web.address=:80'
       - '--entrypoints.websecure.address=:443'
       - '--entrypoints.influxdb.address=:8086'
-      - '--entrypoints.fastapi.address=:8443'
+      # - '--entrypoints.backend.address=:8443'  ## uncomment this to expose internal API (insecure)
     ports:
       - '80:80'
       - '443:443'
       - '8086:8086'
-      # - '8443:8443'  # uncomment this to expose internal API (insecure)
+      # - '8443:8443'  ## uncomment this to expose internal API (insecure)
     volumes:
       - '/var/run/docker.sock:/var/run/docker.sock:ro'
     networks:
@@ -67,12 +67,13 @@ services:
 
   fastapi:
     image: 'registry.coolblock.com/coolblock/panel-api:__PANEL_API_VERSION__'
-    labels:
-      - 'traefik.enable=true'
-      - 'traefik.http.routers.fastapi.rule=PathPrefix(`/backend`)'
-      - 'traefik.http.routers.fastapi.entrypoints=fastapi'
-      - 'traefik.http.routers.fastapi.tls=true'
-      - 'traefik.http.services.fastapi.loadbalancer.server.port=8080'
+    ## uncomment the below to expose internal API (insecure)
+    # labels:
+    #   - 'traefik.enable=true'
+    #   - 'traefik.http.routers.backend.rule=PathPrefix(`/backend`)'
+    #   - 'traefik.http.routers.backend.entrypoints=backend'
+    #   - 'traefik.http.routers.backend.tls=true'
+    #   - 'traefik.http.services.backend.loadbalancer.server.port=8080'
     env_file:
       - '.env'
     depends_on:

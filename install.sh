@@ -223,7 +223,7 @@ function install_docker() {
 
     echo -e ">> ${c_prpl} Creating Docker network (if does not exist) ..${c_rst}"
     if [ ! $(docker network ls --filter=name=coolblock-panel --quiet) ]; then
-        docker network create --driver=bridge --subnet=172.20.0.0/16 --ip-range=172.20.0.0/24 --gateway=172.20.0.1 coolblock-panel
+        docker network create --driver=bridge --subnet=${DOCKER_SUBNET:-172.20.0.0/16} --ip-range=${DOCKER_IP_RANGE:-172.20.0.0/24} --gateway=${DOCKER_GATEWAY:-172.20.0.1} coolblock-panel
         docker network ls --filter=name=coolblock-panel
     fi
 
@@ -293,6 +293,9 @@ function install_panel() {
         -e "s#__PANEL_API_VERSION__#${docker_tags[api]}#g" \
         -e "s#__PANEL_PROXY_VERSION__#${docker_tags[proxy]}#g" \
         "${pdir}/docker-compose.yml"
+
+    echo -e "${c_prpl}>> Pulling Docker images ..${c_rst}"
+    sudo -u coolblock docker compose -f "${pdir}/docker-compose.yml" pull
 
     echo -e "${c_prpl}>> Backing up existing environment file (if available).. ${c_rst}"
     if [ -f "${pdir}/.env" ]; then
@@ -365,6 +368,9 @@ function install_panel() {
         sudo -u coolblock mysql --defaults-file=/home/coolblock/.my.cnf coolblock-panel < "${pdir}/backup/coolblock-panel_users.sql"
         sudo -u coolblock docker compose -f "${pdir}/docker-compose.yml" down
     fi
+
+    echo -e "${c_prpl}>> Deploying services ..${c_rst}"
+    sudo -u coolblock docker compose -f "${pdir}/docker-compose.yml" up -d
 
     return 0
 }
