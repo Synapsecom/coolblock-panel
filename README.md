@@ -6,7 +6,9 @@
 
 1. Install latest Ubuntu Desktop LTS.
 
-2. Run the bootstrap script:
+2. Run the bootstrap script to **install** or **upgrade** the stack:
+
+   > The script prepares the project in /home/coolblock/panel and keeps database dumps in /home/coolblock/panel/backup
 
    ```bash
    curl -fsSL https://downloads.coolblock.com/panel/install.sh | bash -s -- --tank-model <tank_model> --plc-model <plc_model> --serial-number <serial_number> --license-key <license_key>
