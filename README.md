@@ -42,8 +42,25 @@
   docker compose down
   ```
 
-- Upgrading the services
+- Looking up credentials
 
   ```bash
-  # as coolblock user, run the installer script as advised by Coolblock staff
+  # as coolblock user
+  cd ~/panel
+  cat .env
+  ```
+
+- Connecting to relational database
+
+  ```bash
+  # as coolblock user
+  mysql --defaults-file=~/.my.cnf coolblock-panel
+  ```
+
+- Taking backups of relational database
+
+  ```bash
+  # as coolblock user
+  cd panel/
+  mysqldump --defaults-file=~/.my.cnf --databases coolblock-panel > adhoc-coolblock-panel_$(date +%Y%m%d_%H%M%S).sql
   ```
