@@ -18,7 +18,7 @@ services:
       - '80:80'
       - '443:443'
       - '8086:8086'
-      # - '8443:8443'
+      # - '8443:8443'  # uncomment this to expose internal API (insecure)
     volumes:
       - '/var/run/docker.sock:/var/run/docker.sock:ro'
     networks:
@@ -77,7 +77,7 @@ services:
       - '.env'
     depends_on:
       - 'mysql'
-      - 'redis'
+      - 'dragonfly'
       - 'influxdb'
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://localhost:8080/health']
@@ -98,7 +98,7 @@ services:
       - '.env'
     depends_on:
       - 'mysql'
-      - 'redis'
+      - 'dragonfly'
       - 'influxdb'
     networks:
       - 'coolblock-panel'
@@ -114,7 +114,7 @@ services:
       - '.env'
     depends_on:
       - 'mysql'
-      - 'redis'
+      - 'dragonfly'
       - 'influxdb'
     networks:
       - 'coolblock-panel'
@@ -130,7 +130,7 @@ services:
       - '.env'
     depends_on:
       - 'mysql'
-      - 'redis'
+      - 'dragonfly'
       - 'influxdb'
     networks:
       - 'coolblock-panel'
@@ -146,7 +146,7 @@ services:
       - '.env'
     depends_on:
       - 'mysql'
-      - 'redis'
+      - 'dragonfly'
       - 'influxdb'
     networks:
       - 'coolblock-panel'
@@ -162,7 +162,7 @@ services:
       - '.env'
     depends_on:
       - 'mysql'
-      - 'redis'
+      - 'dragonfly'
       - 'influxdb'
     networks:
       - 'coolblock-panel'
@@ -171,18 +171,17 @@ services:
       restart_policy:
         condition: 'on-failure'
 
-  redis:
-    image: 'redis:latest'
-    # command: ['redis-server', '--appendonly', 'yes']
-    # volumes:
-    #   - 'redis-data:/data'
+  dragonfly:
+    image: 'docker.dragonflydb.io/dragonflydb/dragonfly:latest'
+    ulimits:
+      memlock: -1
     networks:
       - 'coolblock-panel'
-    healthcheck:
-      test: ['CMD', 'redis-cli', 'ping']
-      interval: '10s'
-      timeout: '5s'
-      retries: 5
+    # healthcheck:
+    #   test: ['CMD', 'redis-cli', 'ping']
+    #   interval: '10s'
+    #   timeout: '5s'
+    #   retries: 5
     restart: 'unless-stopped'
 
   flower:
@@ -190,7 +189,7 @@ services:
     env_file:
       - '.env'
     depends_on:
-      - 'redis'
+      - 'dragonfly'
     networks:
       - 'coolblock-panel'
     restart: 'unless-stopped'
@@ -205,20 +204,12 @@ services:
       - 'traefik.http.services.influxdb.loadbalancer.server.port=8086'
     env_file:
       - '.env'
-    environment:
-      DOCKER_INFLUXDB_INIT_MODE: 'setup'
-      DOCKER_INFLUXDB_INIT_ORG: 'coolblock-org'
-      DOCKER_INFLUXDB_INIT_BUCKET: 'coolblock-bucket'
-    # volumes:
-    #   - 'influxdb-data:/var/lib/influxdb'
     networks:
       - 'coolblock-panel'
     restart: 'unless-stopped'
 
 volumes:
   coolblock-panel-web-database-data:
-  # redis-data:
-  # influxdb-data:
 
 networks:
   coolblock-panel:

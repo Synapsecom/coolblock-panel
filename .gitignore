@@ -1,4 +1,5 @@
 panel/
-
+.env
+.env.bak
 id_ed25519
 coolblock.id_ed25519
