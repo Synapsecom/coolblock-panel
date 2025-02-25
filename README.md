@@ -1,5 +1,3 @@
-<link rel="icon" type="image/x-icon" href="assets/coolblock.svg">
-
 # panel-pc
 
 ![coolblock-logo-text](assets/coolblock-logo-text.svg)
