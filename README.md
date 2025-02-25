@@ -1,3 +1,5 @@
+<link rel="icon" type="image/x-icon" href="assets/coolblock.svg">
+
 # panel-pc
 
 ![coolblock-logo-text](assets/coolblock-logo-text.svg)
@@ -77,7 +79,19 @@ We highly recommend you to scrape/parse this endpoint (with zabbix/nagios etc..)
 Example healthcheck response with telemetry disabled:
 
 ```json
-{"redis":{"status":"healthy"},"database":{"influx":{"local":{"status":"healthy"},"cloud":{"status":"unhealthy"}},"mysql":{"status":"healthy"}},"panel":{"status":"healthy"},"internet":{"status":"healthy"},"latency":85.79100000000001}
+{
+  "redis": { "status": "healthy" },
+  "database": {
+    "influx": {
+      "local": { "status": "healthy" },
+      "cloud": { "status": "unhealthy" }
+    },
+    "mysql": { "status": "healthy" }
+  },
+  "panel": { "status": "healthy" },
+  "internet": { "status": "healthy" },
+  "latency": 85.79100000000001
+}
 ```
 
 The healthcheck endpoint should reply with http status code 200 when `redis`, local `influxdb`, `mysql` and `panel` are healthy, otherwise it responds with a 5xx status code.
