@@ -1,0 +1,11 @@
+{
+  "panel-api": {
+    "version": "1.0.0"
+  },
+  "panel-web": {
+    "version": "0.9.9"
+  },
+  "panel-proxy": {
+    "version": "latest"
+  }
+}
