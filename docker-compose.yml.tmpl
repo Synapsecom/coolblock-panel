@@ -5,6 +5,7 @@ services:
     command:
       - '--global.checkNewVersion=false'
       - '--global.sendAnonymousUsage=false'
+      - '--ping'
       - '--api.insecure=true'
       - '--api.dashboard=true'
       - '--providers.docker'
@@ -21,9 +22,19 @@ services:
       # - '8443:8443'  ## uncomment this to expose internal API (insecure)
     volumes:
       - '/var/run/docker.sock:/var/run/docker.sock:ro'
+    healthcheck:
+      test: ['CMD', 'traefik', 'healthcheck', '--ping']
+      interval: '30s'
+      timeout: '5s'
+      retries: 5
+      start_period: '0s'
+      start_interval: '5s'
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: 'on-failure'
     networks:
       - 'coolblock-panel'
-    restart: 'unless-stopped'
 
   frontend:
     image: 'registry.coolblock.com/coolblock/panel-web:__PANEL_WEB_VERSION__'
@@ -40,18 +51,21 @@ services:
     env_file:
       - '.env'
     depends_on:
-      - 'mysql'
+      mysql:
+        condition: 'service_healthy'
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://localhost:3000/login.html']
       interval: '30s'
       timeout: '5s'
-      retries: 3
-    networks:
-      - 'coolblock-panel'
+      retries: 5
+      start_period: '0s'
+      start_interval: '5s'
     deploy:
       replicas: 3
       restart_policy:
         condition: 'on-failure'
+    networks:
+      - 'coolblock-panel'
 
   mysql:
     image: 'mysql:9'
@@ -62,6 +76,17 @@ services:
       - './init.sql:/docker-entrypoint-initdb.d/init.sql:ro'
     ports:
       - '127.0.0.1:3306:3306'
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-p$$(env | awk -F= "/MYSQL_ROOT_PASSWORD/{print $$2}")']
+      interval: '30s'
+      timeout: '5s'
+      retries: 5
+      start_period: '0s'
+      start_interval: '5s'
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: 'on-failure'
     networks:
       - 'coolblock-panel'
 
@@ -77,123 +102,262 @@ services:
     env_file:
       - '.env'
     depends_on:
-      - 'mysql'
-      - 'dragonfly'
-      - 'influxdb'
+      mysql:
+        condition: 'service_healthy'
+      influxdb:
+        condition: 'service_healthy'
+      redis:
+        condition: 'service_healthy'
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://localhost:8080/backend/health']
       interval: '30s'
       timeout: '5s'
+      retries: 5
+      start_period: '0s'
+      start_interval: '5s'
+    deploy:
+      replicas: 3
+      restart_policy:
+        condition: 'on-failure'
+    networks:
+      - 'coolblock-panel'
+
+  worker-influxdb-read:
+    image: 'registry.coolblock.com/coolblock/panel-api:__PANEL_API_VERSION__'
+    command:
+      [
+        'celery',
+        '-A',
+        'app.tasks.celery_app.celery_app',
+        'worker',
+        '--loglevel=info',
+        '--concurrency=8',
+        '-E',
+        '-Q',
+        'influxdb.read',
+      ]
+    env_file:
+      - '.env'
+    depends_on:
+      mysql:
+        condition: 'service_healthy'
+      influxdb:
+        condition: 'service_healthy'
+      redis:
+        condition: 'service_healthy'
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'celery',
+          'inspect',
+          'ping',
+          '--destination',
+          'celery@$$HOSTNAME',
+        ]
+      interval: '30s'
+      timeout: '5s'
       retries: 3
-    networks:
-      - 'coolblock-panel'
+      start_period: '0s'
+      start_interval: '5s'
     deploy:
       replicas: 3
       restart_policy:
         condition: 'on-failure'
+    networks:
+      - 'coolblock-panel'
 
-  celery-worker-influxdb-read:
+  worker-influxdb-write:
     image: 'registry.coolblock.com/coolblock/panel-api:__PANEL_API_VERSION__'
-    command: ['celery', '-A', 'app.tasks.celery_app.celery_app', 'worker', '--loglevel=info', '--concurrency=8', '-E', '-Q', 'influxdb.read']
+    command:
+      [
+        'celery',
+        '-A',
+        'app.tasks.celery_app.celery_app',
+        'worker',
+        '--loglevel=info',
+        '--concurrency=1',
+        '-E',
+        '-Q',
+        'influxdb.write',
+      ]
     env_file:
       - '.env'
     depends_on:
-      - 'mysql'
-      - 'dragonfly'
-      - 'influxdb'
-    networks:
-      - 'coolblock-panel'
+      mysql:
+        condition: 'service_healthy'
+      influxdb:
+        condition: 'service_healthy'
+      redis:
+        condition: 'service_healthy'
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'celery',
+          'inspect',
+          'ping',
+          '--destination',
+          'celery@$$HOSTNAME',
+        ]
+      interval: '30s'
+      timeout: '5s'
+      retries: 3
+      start_period: '0s'
+      start_interval: '5s'
     deploy:
       replicas: 3
       restart_policy:
         condition: 'on-failure'
+    networks:
+      - 'coolblock-panel'
 
-  celery-worker-influxdb-write:
+  worker-plc-read:
     image: 'registry.coolblock.com/coolblock/panel-api:__PANEL_API_VERSION__'
-    command: ['celery', '-A', 'app.tasks.celery_app.celery_app', 'worker', '--loglevel=info', '--concurrency=1', '-E', '-Q', 'influxdb.write']
+    command:
+      [
+        'celery',
+        '-A',
+        'app.tasks.celery_app.celery_app',
+        'worker',
+        '--loglevel=info',
+        '--concurrency=4',
+        '-E',
+        '-Q',
+        'plc.read',
+      ]
     env_file:
       - '.env'
     depends_on:
-      - 'mysql'
-      - 'dragonfly'
-      - 'influxdb'
-    networks:
-      - 'coolblock-panel'
+      mysql:
+        condition: 'service_healthy'
+      influxdb:
+        condition: 'service_healthy'
+      redis:
+        condition: 'service_healthy'
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'celery',
+          'inspect',
+          'ping',
+          '--destination',
+          'celery@$$HOSTNAME',
+        ]
+      interval: '30s'
+      timeout: '5s'
+      retries: 3
+      start_period: '0s'
+      start_interval: '5s'
     deploy:
       replicas: 3
       restart_policy:
         condition: 'on-failure'
+    networks:
+      - 'coolblock-panel'
 
-  celery-worker-plc-read:
+  worker-plc-write:
     image: 'registry.coolblock.com/coolblock/panel-api:__PANEL_API_VERSION__'
-    command: ['celery', '-A', 'app.tasks.celery_app.celery_app', 'worker', '--loglevel=info', '--concurrency=4', '-E', '-Q', 'plc.read']
+    command:
+      [
+        'celery',
+        '-A',
+        'app.tasks.celery_app.celery_app',
+        'worker',
+        '--loglevel=info',
+        '--concurrency=1',
+        '-E',
+        '-Q',
+        'plc.write',
+      ]
     env_file:
       - '.env'
     depends_on:
-      - 'mysql'
-      - 'dragonfly'
-      - 'influxdb'
-    networks:
-      - 'coolblock-panel'
+      mysql:
+        condition: 'service_healthy'
+      influxdb:
+        condition: 'service_healthy'
+      redis:
+        condition: 'service_healthy'
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'celery',
+          'inspect',
+          'ping',
+          '--destination',
+          'celery@$$HOSTNAME',
+        ]
+      interval: '30s'
+      timeout: '5s'
+      retries: 3
+      start_period: '0s'
+      start_interval: '5s'
     deploy:
       replicas: 3
       restart_policy:
         condition: 'on-failure'
+    networks:
+      - 'coolblock-panel'
 
-  celery-worker-plc-write:
+  scheduler:
     image: 'registry.coolblock.com/coolblock/panel-api:__PANEL_API_VERSION__'
-    command: ['celery', '-A', 'app.tasks.celery_app.celery_app', 'worker', '--loglevel=info', '--concurrency=1', '-E', '-Q', 'plc.write']
+    command:
+      [
+        'celery',
+        '-A',
+        'app.tasks.celery_app.celery_app',
+        'beat',
+        '--loglevel=info',
+      ]
     env_file:
       - '.env'
     depends_on:
-      - 'mysql'
-      - 'dragonfly'
-      - 'influxdb'
-    networks:
-      - 'coolblock-panel'
-    deploy:
-      replicas: 3
-      restart_policy:
-        condition: 'on-failure'
-
-  celery-beat:
-    image: 'registry.coolblock.com/coolblock/panel-api:__PANEL_API_VERSION__'
-    command: ['celery', '-A', 'app.tasks.celery_app.celery_app', 'beat', '--loglevel=info']
-    env_file:
-      - '.env'
-    depends_on:
-      - 'mysql'
-      - 'dragonfly'
-      - 'influxdb'
-    networks:
-      - 'coolblock-panel'
+      mysql:
+        condition: 'service_healthy'
+      influxdb:
+        condition: 'service_healthy'
+      redis:
+        condition: 'service_healthy'
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'celery',
+          'inspect',
+          'ping',
+          '--destination',
+          'celery@$$HOSTNAME',
+        ]
+      interval: '30s'
+      timeout: '5s'
+      retries: 3
+      start_period: '0s'
+      start_interval: '5s'
     deploy:
       replicas: 1
       restart_policy:
         condition: 'on-failure'
-
-  dragonfly:
-    image: 'docker.dragonflydb.io/dragonflydb/dragonfly:latest'
-    ulimits:
-      memlock: -1
     networks:
       - 'coolblock-panel'
-    # healthcheck:
-    #   test: ['CMD', 'redis-cli', 'ping']
-    #   interval: '10s'
-    #   timeout: '5s'
-    #   retries: 5
-    restart: 'unless-stopped'
 
-  flower:
-    image: 'mher/flower:latest'
-    env_file:
-      - '.env'
-    depends_on:
-      - 'dragonfly'
+  redis:
+    image: 'redis:latest'
+    healthcheck:
+      test: ['CMD-SHELL', 'redis-cli', 'ping']
+      interval: '30s'
+      timeout: '5s'
+      retries: 3
+      start_period: '0s'
+      start_interval: '5s'
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: 'on-failure'
     networks:
       - 'coolblock-panel'
-    restart: 'unless-stopped'
 
   influxdb:
     image: 'influxdb:2'
@@ -205,9 +369,19 @@ services:
       - 'traefik.http.services.influxdb.loadbalancer.server.port=8086'
     env_file:
       - '.env'
+    healthcheck:
+      test: ['CMD', 'curl', '-fsL', 'http://localhost:8086/ping']
+      interval: '30s'
+      timeout: '5s'
+      retries: 3
+      start_period: '0s'
+      start_interval: '5s'
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: 'on-failure'
     networks:
       - 'coolblock-panel'
-    restart: 'unless-stopped'
 
 volumes:
   coolblock-panel-web-database-data:

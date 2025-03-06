@@ -22,11 +22,9 @@
 
    > Should be changed afterwards `Gear Icon -> Change Password` and `Gear Icon -> Change PIN`
 
-   ```plain
-   username: admin
-   password: admin123
-   pin: 1234
-   ```
+   | Username | Password | PIN  |
+   | -------- | -------- | ---- |
+   | admin    | admin123 | 1234 |
 
 ## Adiministration
 
@@ -86,14 +84,19 @@ Example healthcheck response with telemetry disabled:
   "database": {
     "influx": {
       "local": { "status": "healthy" },
-      "cloud": { "status": "unhealthy" }
+      "cloud": { "status": "healthy" }
     },
     "mysql": { "status": "healthy" }
   },
-  "panel": { "status": "healthy" },
+  "panel": {
+    "web": { "status": "healthy", "version": "0.9.9" },
+    "api": { "status": "healthy", "version": "1.0.0" }
+  },
   "internet": { "status": "healthy" },
-  "latency": 85.79100000000001
+  "latency": 442.908
 }
 ```
+
+> Latency value is in ms
 
 The healthcheck endpoint should reply with http status code 200 when `redis`, local `influxdb`, `mysql` and `panel` are healthy, otherwise it responds with a 5xx status code.
