@@ -26,7 +26,7 @@ services:
       test: ['CMD', 'traefik', 'healthcheck', '--ping']
       interval: '30s'
       timeout: '5s'
-      retries: 5
+      retries: 3
       start_period: '0s'
       start_interval: '5s'
     deploy:
@@ -57,7 +57,7 @@ services:
       test: ['CMD', 'curl', '-f', 'http://localhost:3000/login.html']
       interval: '30s'
       timeout: '5s'
-      retries: 5
+      retries: 3
       start_period: '0s'
       start_interval: '5s'
     deploy:
@@ -80,7 +80,7 @@ services:
       test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-p$$(env | awk -F= "/MYSQL_ROOT_PASSWORD/{print $$2}")']
       interval: '30s'
       timeout: '5s'
-      retries: 5
+      retries: 3
       start_period: '0s'
       start_interval: '5s'
     deploy:
@@ -112,7 +112,7 @@ services:
       test: ['CMD', 'curl', '-f', 'http://localhost:8080/backend/health']
       interval: '30s'
       timeout: '5s'
-      retries: 5
+      retries: 3
       start_period: '0s'
       start_interval: '5s'
     deploy:
