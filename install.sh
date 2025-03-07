@@ -364,8 +364,8 @@ function install_panel() {
         echo -e "${c_ylw}>> Waiting for MySQL database ..${c_rst}"
         while :; do
             sleep 1
-            echo -e "${c_grn}>> SELECT updated_at from users where id=1${c_rst}"
-            sudo -u coolblock mysql --defaults-file=/home/coolblock/.my.cnf coolblock-panel -Bsqe 'SELECT updated_at from users where id=1' && break
+            echo -e "${c_grn}>> SELECT updated_at FROM users WHERE id=1${c_rst}"
+            sudo -u coolblock mysql --defaults-file=/home/coolblock/.my.cnf coolblock-panel -Bsqe 'SELECT updated_at FROM users WHERE id=1' && break
         done
 
         sudo -u coolblock mysql --defaults-file=/home/coolblock/.my.cnf coolblock-panel < "${pdir}/backup/coolblock-panel_users.sql"
