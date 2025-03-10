@@ -470,7 +470,7 @@ function install_panel() {
 
     echo -e "${c_prpl}>> Patching mysql database and restoring users (if applicable) ..${c_rst}"
     if [[ -f "${pdir}/backup/coolblock-panel.sql" && -f "${pdir}/backup/coolblock-panel_users.sql" ]]; then
-        /usr/bin/sudo -u coolblock /usr/bin/docker volume /usr/bin/rm panel_coolblock-panel-web-database-data
+        /usr/bin/sudo -u coolblock /usr/bin/docker volume rm panel_coolblock-panel-web-database-data
         /usr/bin/sudo -u coolblock /usr/bin/docker compose -f "${pdir}/docker-compose.yml" up -d /usr/bin/mysql
         echo -e "${c_ylw}>> Waiting for mysql database ..${c_rst}"
         while :; do
