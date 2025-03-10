@@ -371,7 +371,7 @@ function install_panel() {
 
     echo -e "${c_prpl}>> Backing up mysql database (if available) .."
     if [[ -f "/home/coolblock/.my.cnf" && -f "${pdir}/docker-compose.yml" ]]; then
-        /usr/bin/sudo -u coolblock /usr/bin/docker compose -f "${pdir}/docker-compose.yml" up -d /usr/bin/mysql
+        /usr/bin/sudo -u coolblock /usr/bin/docker compose -f "${pdir}/docker-compose.yml" up -d mysql
         echo -e "${c_ylw}>> Waiting for mysql database ..${c_rst}"
         while :; do
             /usr/bin/sleep 1
@@ -381,8 +381,8 @@ function install_panel() {
 
         mysql_backup_file="${pdir}/backup/coolblock-panel_$(date +%Y%m%d_%H%M%S).sql"
         mysql_users_backup_file="${pdir}/backup/coolblock-panel_users_$(date +%Y%m%d_%H%M%S).sql"
-        /usr/bin/sudo -u coolblock mysqldump --defaults-file=/home/coolblock/.my.cnf --databases coolblock-panel > "${mysql_backup_file}"
-        /usr/bin/sudo -u coolblock mysqldump --defaults-file=/home/coolblock/.my.cnf --databases coolblock-panel --tables users > "${mysql_users_backup_file}"
+        /usr/bin/sudo -u coolblock /usr/bin/mysqldump --defaults-file=/home/coolblock/.my.cnf --databases coolblock-panel > "${mysql_backup_file}"
+        /usr/bin/sudo -u coolblock /usr/bin/mysqldump --defaults-file=/home/coolblock/.my.cnf --databases coolblock-panel --tables users > "${mysql_users_backup_file}"
         /usr/bin/chown -v coolblock:coolblock "${mysql_backup_file}" "${mysql_users_backup_file}"
 
         /usr/bin/rm -fv "${pdir}/backup/coolblock-panel.sql" "${pdir}/backup/coolblock-panel_users.sql"
