@@ -225,12 +225,12 @@ function install_prerequisites() {
     /usr/bin/apt full-upgrade -y
 
     echo -e "${c_cyan}>> Installing helper packages (if not installed already) ..${c_rst}"
-    apt /usr/bin/install -y \
-        /usr/bin/sudo vim nano \
+    apt install -y \
+        sudo vim nano \
         net-tools dnsutils tcpdump traceroute \
         curl wget \
         git jq yq \
-        ca-certificates /usr/bin/openssl \
+        ca-certificates openssl \
         mariadb-client
 
     return 0
@@ -489,6 +489,14 @@ function install_panel() {
     return 0
 }
 
+function cleanup() {
+    echo -e "${c_prpl}>> Cleaning up ..${c_rst}"
+    /usr/bin/apt autoremove -y
+    /usr/bin/apt clean all
+
+    return 0
+}
+
 function main() {
 
     check_arguments "${@}"
@@ -526,6 +534,10 @@ function main() {
     install_panel
     declare -r install_panel_rc="${?}"
     [ "${install_panel_rc}" -ne 0 ] && return "${install_panel_rc}"
+
+    cleanup
+    declare -r cleanup_rc="${?}"
+    [ "${cleanup_rc}" -ne 0 ] && return "${cleanup_rc}"
 
     return 0
 }
