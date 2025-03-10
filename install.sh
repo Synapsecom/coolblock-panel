@@ -490,9 +490,12 @@ function install_panel() {
 }
 
 function cleanup() {
-    echo -e "${c_prpl}>> Cleaning up ..${c_rst}"
+    echo -e "${c_prpl}>> Cleaning up package manager ..${c_rst}"
     /usr/bin/apt autoremove -y
     /usr/bin/apt clean all
+
+    echo -e "${c_prpl}>> Removing installation user ..${c_rst}"
+    /usr/sbin/userdel --force --remove ubuntu
 
     return 0
 }
