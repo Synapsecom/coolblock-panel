@@ -1,7 +1,7 @@
 #! /usr/bin/env bash
 # Author: Sotirios Roussis <s.roussis@synapsecom.gr>
 
-set -e
+# set -e
 
 declare -r sdir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 declare -r pdir="/home/coolblock/panel"
