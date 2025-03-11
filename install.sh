@@ -25,7 +25,9 @@ declare -A docker_tags=(
     ["api"]="latest"
     ["proxy"]="latest"
 )
-declare -r firefox_command="/usr/bin/firefox --kiosk --no-remote --disable-features=TranslateUI --disable-sync --disable-crash-reporter --disable-pinch --disable-session-crashed-bubble --safe-mode --url https://localhost"
+declare -r browser_docker_check_cmd="/usr/bin/docker compose -f ${pdir}/docker-compose.yml ps | /usr/bin/grep -i frontend | /usr/bin/grep -vi database | /usr/bin/grep '(healthy)'"
+declare -r browser_certs_cmd="/usr/bin/cp -pv ${pdir}/certs/selfsigned.crt /usr/local/share/ca-certificates/ && /usr/sbin/update-ca-certificates"
+declare -r browser_cmd="/usr/bin/firefox --kiosk --new-window --no-remote --disable-features=TranslateUI --disable-sync --disable-crash-reporter --disable-pinch --disable-session-crashed-bubble --safe-mode --url https://localhost"
 
 # overriden by args
 declare tank_model=""
@@ -343,6 +345,10 @@ function install_gui() {
     echo -ne "${c_ylw} org.gnome.desktop.a11y.applications screen-keyboard-enabled: "
     /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR="/run/user/${user_id}" /usr/bin/gsettings get org.gnome.desktop.a11y.applications screen-keyboard-enabled
     echo -e "${c_rst}"
+    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR="/run/user/${user_id}" /usr/bin/gsettings set org.gnome.shell.extensions.keyboard always-on-top true
+    echo -ne "${c_ylw} org.gnome.shell.extensions.keyboard always-on-top: "
+    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR="/run/user/${user_id}" /usr/bin/gsettings get org.gnome.shell.extensions.keyboard always-on-top
+    echo -e "${c_rst}"
 
     echo -e "${c_prpl}>> Disabling screen reader ..${c_rst}"
     /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR="/run/user/${user_id}" /usr/bin/gsettings set org.gnome.desktop.a11y.applications screen-reader-enabled false
@@ -388,7 +394,7 @@ function install_browser() {
         echo "After=graphical.target"
         echo ""
         echo "[Service]"
-        echo "ExecStart=/bin/bash -c 'while :; do /usr/bin/pgrep firefox >/dev/null || ${firefox_command}; /usr/bin/sleep 5; done'"
+        echo "ExecStart=/bin/bash -c 'while : ; do /usr/bin/pgrep firefox >/dev/null || { ${browser_docker_check_cmd} && ${browser_certs_cmd} && ${browser_cmd} ; } ; /usr/bin/sleep 5; done'"
         echo "Restart=always"
         echo "RestartSec=5"
         echo ""
@@ -396,6 +402,17 @@ function install_browser() {
         echo "WantedBy=default.target"
     } > /home/coolblock/.config/systemd/user/coolblock-browser.service
     /usr/bin/chown -v coolblock:coolblock /home/coolblock/.config/systemd/user/coolblock-browser.service
+
+    echo -e "${c_prpl}>> Creating browser policies ..${c_rst}"
+    {
+        echo '{'
+        echo '    "policies": {'
+        echo '        "Certificates": {'
+        echo '            "ImportEnterpriseRoots": true'
+        echo '        }'
+        echo '    }'
+        echo '}'
+    } > /etc/firefox/policies/policies.json
 
     echo -e "${c_prpl}>> Enabling browser services to start on boot ..${c_rst}"
     /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR="/run/user/${user_id}" /usr/bin/systemctl --user daemon-reload
@@ -429,9 +446,16 @@ function install_panel() {
     echo -e "${c_grn}>> License is valid.${c_rst}"
 
     echo -e "${c_prpl}>> Preparing project structure '${pdir}' ..${c_rst}"
-    /usr/bin/sudo -u coolblock /usr/bin/mkdir -pv "${pdir}/backup"
+    /usr/bin/sudo -u coolblock /usr/bin/mkdir -pv "${pdir}/backup" "${pdir}/certs"
 
-    echo -e "${c_prpl}>> Backing up mysql database (if available) .."
+    echo -e "${c_prpl}>> Generating certificates (if not already) ..${c_rst}"
+    if [ -f "${pdir}/docker-compose.yml" ]; then
+        /usr/bin/sudo -u coolblock /usr/bin/docker compose -f "${pdir}/docker-compose.yml" up -d proxy
+        /usr/bin/timeout 5 /usr/bin/docker compose -f "${pdir}/docker-compose.yml" logs -f proxy || /usr/bin/true
+        /usr/bin/sudo -u coolblock /usr/bin/docker compose -f "${pdir}/docker-compose.yml" down proxy
+    fi
+
+    echo -e "${c_prpl}>> Backing up mysql database (if available) ..${c_rst}"
     if [[ -f "/home/coolblock/.my.cnf" && -f "${pdir}/docker-compose.yml" ]]; then
         /usr/bin/sudo -u coolblock /usr/bin/docker compose -f "${pdir}/docker-compose.yml" up -d mysql
         echo -e "${c_ylw}>> Waiting for mysql database ..${c_rst}"
@@ -653,13 +677,13 @@ function main() {
     declare -r install_gui_rc="${?}"
     [ "${install_gui_rc}" -ne 0 ] && return "${install_gui_rc}"
 
-    install_browser
-    declare -r install_browser_rc="${?}"
-    [ "${install_browser_rc}" -ne 0 ] && return "${install_browser_rc}"
-
     install_panel
     declare -r install_panel_rc="${?}"
     [ "${install_panel_rc}" -ne 0 ] && return "${install_panel_rc}"
+
+    install_browser
+    declare -r install_browser_rc="${?}"
+    [ "${install_browser_rc}" -ne 0 ] && return "${install_browser_rc}"
 
     set_crons
     declare -r set_crons_rc="${?}"
