@@ -22,6 +22,7 @@ services:
       # - '8443:8443'  ## uncomment this to expose internal API (insecure)
     volumes:
       - '/var/run/docker.sock:/var/run/docker.sock:ro'
+      - '/home/coolblock/panel/certs:/coolblock-panel-certs:rw'
     healthcheck:
       test: ['CMD', 'traefik', 'healthcheck', '--ping']
       interval: '30s'
