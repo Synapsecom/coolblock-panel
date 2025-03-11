@@ -371,9 +371,7 @@ function install_gui() {
 
     echo -e "${c_prpl}>> Setting branding wallpaper ..${c_rst}"
     declare -r wallpaper_path="${pdir}/wallpaper.png"
-    _download "https://downloads.coolblock.com/panel/wallpaper.png" "${wallpaper_path}" coolblock \
-        || _download "https://downloads.coolblock.com/panel/wallpaper.png" "${wallpaper_path}" coolblock \
-        || _download "https://downloads.coolblock.com/panel/wallpaper.png" "${wallpaper_path}" coolblock
+    _download "https://downloads.coolblock.com/panel/wallpaper.png" "${wallpaper_path}"
 
     /usr/bin/sudo -u coolblock /usr/bin/gsettings set org.gnome.desktop.background picture-uri "file://${wallpaper_path}"
     echo -ne "${c_ylw} org.gnome.desktop.background picture-uri: "
