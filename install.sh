@@ -323,6 +323,7 @@ function install_gui() {
     /usr/bin/sudo -u coolblock /usr/bin/gsettings get org.gnome.settings-daemon.plugins.power sleep-inactive-battery-type
     echo -ne "${c_rst}"
 
+
     echo -e "${c_prpl}>> Disabling multiple workspaces and enforcing to 1 ..${c_rst}"
     /usr/bin/sudo -u coolblock /usr/bin/gsettings set org.gnome.mutter dynamic-workspaces false
     echo -ne "${c_ylw} org.gnome.mutter dynamic-workspaces: "
@@ -333,6 +334,7 @@ function install_gui() {
     echo -ne "${c_ylw} org.gnome.desktop.wm.preferences num-workspaces: "
     /usr/bin/sudo -u coolblock /usr/bin/gsettings get org.gnome.desktop.wm.preferences num-workspaces
     echo -ne "${c_rst}"
+
 
     echo -e "${c_prpl}>> Enabling system-wide dark mode ..${c_rst}"
     /usr/bin/sudo -u coolblock /usr/bin/gsettings set org.gnome.desktop.interface gtk-theme 'Adwaita-dark'
@@ -345,17 +347,13 @@ function install_gui() {
     /usr/bin/sudo -u coolblock /usr/bin/gsettings get org.gnome.desktop.interface color-scheme
     echo -ne "${c_rst}"
 
+
     echo -e "${c_prpl}>> Configuring screen keyboard ..${c_rst}"
     /usr/bin/sudo -u coolblock /usr/bin/gsettings set org.gnome.desktop.a11y.applications screen-keyboard-enabled true
     echo -ne "${c_ylw} org.gnome.desktop.a11y.applications screen-keyboard-enabled: "
     /usr/bin/sudo -u coolblock /usr/bin/gsettings get org.gnome.desktop.a11y.applications screen-keyboard-enabled
     echo -ne "${c_rst}"
 
-    ## No such schema “org.gnome.shell.extensions.keyboard”
-    # /usr/bin/sudo -u coolblock /usr/bin/gsettings set org.gnome.shell.extensions.keyboard always-on-top true
-    # echo -ne "${c_ylw} org.gnome.shell.extensions.keyboard always-on-top: "
-    # /usr/bin/sudo -u coolblock /usr/bin/gsettings get org.gnome.shell.extensions.keyboard always-on-top
-    # echo -ne "${c_rst}"
 
     echo -e "${c_prpl}>> Disabling screen reader ..${c_rst}"
     /usr/bin/sudo -u coolblock /usr/bin/gsettings set org.gnome.desktop.a11y.applications screen-reader-enabled false
@@ -363,15 +361,18 @@ function install_gui() {
     /usr/bin/sudo -u coolblock /usr/bin/gsettings get org.gnome.desktop.a11y.applications screen-reader-enabled
     echo -ne "${c_rst}"
 
+
     echo -e "${c_prpl}>> Disabling screen magnifier ..${c_rst}"
     /usr/bin/sudo -u coolblock /usr/bin/gsettings set org.gnome.desktop.a11y.applications screen-magnifier-enabled false
     echo -ne "${c_ylw} org.gnome.desktop.a11y.applications screen-magnifier-enabled: "
     /usr/bin/sudo -u coolblock /usr/bin/gsettings get org.gnome.desktop.a11y.applications screen-magnifier-enabled
     echo -ne "${c_rst}"
 
+
     echo -e "${c_prpl}>> Setting branding wallpaper ..${c_rst}"
     declare -r wallpaper_path="${pdir}/wallpaper.png"
-    /usr/bin/sudo -u coolblock /usr/bin/curl -Lso "${wallpaper_path}" "https://downloads.coolblock.com/panel/wallpaper.png"
+    _download "https://downloads.coolblock.com/panel/wallpaper.png" "${wallpaper_path}" coolblock
+
     /usr/bin/sudo -u coolblock /usr/bin/gsettings set org.gnome.desktop.background picture-uri "file://${wallpaper_path}"
     echo -ne "${c_ylw} org.gnome.desktop.background picture-uri: "
     /usr/bin/sudo -u coolblock /usr/bin/gsettings get org.gnome.desktop.background picture-uri
