@@ -216,7 +216,7 @@ function create_user() {
 
     echo -e "${c_prpl}>> Creating sudoers file for 'coolblock' user ..${c_rst}"
     echo "coolblock ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/coolblock
-    /usr/bin/chmod -v 0440 /etc/sudoers.d/coolblock
+    /usr/bin/chmod -v 0400 /etc/sudoers.d/coolblock
 
     return 0
 }
@@ -247,7 +247,7 @@ function install_prerequisites() {
 }
 
 function install_docker() {
-    echo -e "${c_cyan}>> Installing docker (if not installed already) ..${c_rst}"
+    echo -e "${c_cyan}>> Installing Docker (if not installed already) ..${c_rst}"
     if ! hash docker &>/dev/null; then
         /usr/bin/install -m 0755 -d /etc/apt/keyrings
         /usr/bin/curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
@@ -260,8 +260,8 @@ function install_docker() {
         /usr/bin/systemctl enable --now docker
     fi
 
-    echo -e ">> ${c_prpl} Creating /usr/bin/docker network (if does not exist) ..${c_rst}"
-    if [ ! $(docker network ls --filter=name=coolblock-panel --quiet) ]; then
+    echo -e ">> ${c_prpl} Creating Docker network (if does not exist) ..${c_rst}"
+    if [ ! $(/usr/bin/docker network ls --filter=name=coolblock-panel --quiet) ]; then
         /usr/bin/docker network create --driver=bridge --subnet=${DOCKER_SUBNET:-172.20.0.0/16} --ip-range=${DOCKER_IP_RANGE:-172.20.0.0/24} --gateway=${DOCKER_GATEWAY:-172.20.0.1} coolblock-panel
         /usr/bin/docker network ls --filter=name=coolblock-panel
     fi
