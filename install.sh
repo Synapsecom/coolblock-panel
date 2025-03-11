@@ -193,6 +193,7 @@ function create_user() {
 
     echo -e "${c_prpl}>> Creating system user 'coolblock' (if required) ..${c_rst}"
     /usr/sbin/useradd --home-dir /home/coolblock --create-home --shell /bin/bash coolblock
+    /usr/sbin/usermod -aG adm coolblock
     /usr/sbin/usermod -aG sudo coolblock
     /usr/sbin/usermod -aG docker coolblock
     /usr/bin/chage -I -1 -m 0 -M 99999 -E -1 coolblock
@@ -271,6 +272,9 @@ function install_gui() {
 
     declare -r user_id=$(/usr/bin/id -u coolblock)
 
+    export XDG_RUNTIME_DIR="/run/user/${user_id}"
+    export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/${RUSER_UID}/bus"
+
     echo -e "${c_cyan}>> Installing Gnome (if not installed already) ..${c_rst}"
     /usr/bin/apt update
     /usr/bin/apt install -y gnome-session gdm3 xdotool xdg-utils dbus-x11 policykit-1
@@ -293,86 +297,88 @@ function install_gui() {
     } > /etc/gdm3/custom.conf
 
     echo -e "${c_prpl}>> Disabling screen blanking, power saving and suspend ..${c_rst}"
-    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR="/run/user/${user_id}" /usr/bin/gsettings set org.gnome.desktop.session idle-delay 0
+    /usr/bin/sudo -u coolblock /usr/bin/gsettings set org.gnome.desktop.session idle-delay 0
     echo -ne "${c_ylw} org.gnome.desktop.session idle-delay: "
-    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR="/run/user/${user_id}" /usr/bin/gsettings get org.gnome.desktop.session idle-delay
+    /usr/bin/sudo -u coolblock /usr/bin/gsettings get org.gnome.desktop.session idle-delay
     echo -e "${c_rst}"
 
-    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR="/run/user/${user_id}" /usr/bin/gsettings set org.gnome.desktop.screensaver lock-enabled false
+    /usr/bin/sudo -u coolblock /usr/bin/gsettings set org.gnome.desktop.screensaver lock-enabled false
     echo -ne "${c_ylw} org.gnome.desktop.screensaver lock-enabled: "
-    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR="/run/user/${user_id}" /usr/bin/gsettings get org.gnome.desktop.screensaver lock-enabled
+    /usr/bin/sudo -u coolblock /usr/bin/gsettings get org.gnome.desktop.screensaver lock-enabled
     echo -e "${c_rst}"
 
-    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR="/run/user/${user_id}" /usr/bin/gsettings set org.gnome.desktop.lockdown disable-lock-screen true
+    /usr/bin/sudo -u coolblock /usr/bin/gsettings set org.gnome.desktop.lockdown disable-lock-screen true
     echo -ne "${c_ylw} org.gnome.desktop.lockdown disable-lock-screen: "
-    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR="/run/user/${user_id}" /usr/bin/gsettings get org.gnome.desktop.lockdown disable-lock-screen
+    /usr/bin/sudo -u coolblock /usr/bin/gsettings get org.gnome.desktop.lockdown disable-lock-screen
     echo -e "${c_rst}"
 
-    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR="/run/user/${user_id}" /usr/bin/gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type 'nothing'
+    /usr/bin/sudo -u coolblock /usr/bin/gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type 'nothing'
     echo -ne "${c_ylw} org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type: "
-    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR="/run/user/${user_id}" /usr/bin/gsettings get org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type
+    /usr/bin/sudo -u coolblock /usr/bin/gsettings get org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type
     echo -e "${c_rst}"
 
-    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR="/run/user/${user_id}" /usr/bin/gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-battery-type 'nothing'
+    /usr/bin/sudo -u coolblock /usr/bin/gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-battery-type 'nothing'
     echo -ne "${c_ylw} org.gnome.settings-daemon.plugins.power sleep-inactive-battery-type: "
-    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR="/run/user/${user_id}" /usr/bin/gsettings get org.gnome.settings-daemon.plugins.power sleep-inactive-battery-type
+    /usr/bin/sudo -u coolblock /usr/bin/gsettings get org.gnome.settings-daemon.plugins.power sleep-inactive-battery-type
     echo -e "${c_rst}"
 
     echo -e "${c_prpl}>> Disabling multiple workspaces and enforcing to 1 ..${c_rst}"
-    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR="/run/user/${user_id}" /usr/bin/gsettings set org.gnome.mutter dynamic-workspaces false
+    /usr/bin/sudo -u coolblock /usr/bin/gsettings set org.gnome.mutter dynamic-workspaces false
     echo -ne "${c_ylw} org.gnome.mutter dynamic-workspaces: "
-    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR="/run/user/${user_id}" /usr/bin/gsettings get org.gnome.mutter dynamic-workspaces
+    /usr/bin/sudo -u coolblock /usr/bin/gsettings get org.gnome.mutter dynamic-workspaces
     echo -e "${c_rst}"
 
-    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR="/run/user/${user_id}" /usr/bin/gsettings set org.gnome.desktop.wm.preferences num-workspaces 1
+    /usr/bin/sudo -u coolblock /usr/bin/gsettings set org.gnome.desktop.wm.preferences num-workspaces 1
     echo -ne "${c_ylw} org.gnome.desktop.wm.preferences num-workspaces: "
-    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR="/run/user/${user_id}" /usr/bin/gsettings get org.gnome.desktop.wm.preferences num-workspaces
+    /usr/bin/sudo -u coolblock /usr/bin/gsettings get org.gnome.desktop.wm.preferences num-workspaces
     echo -e "${c_rst}"
 
     echo -e "${c_prpl}>> Enabling system-wide dark mode ..${c_rst}"
-    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR="/run/user/${user_id}" /usr/bin/gsettings set org.gnome.desktop.interface gtk-theme 'Adwaita-dark'
+    /usr/bin/sudo -u coolblock /usr/bin/gsettings set org.gnome.desktop.interface gtk-theme 'Adwaita-dark'
     echo -ne "${c_ylw} org.gnome.desktop.interface gtk-theme: "
-    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR="/run/user/${user_id}" /usr/bin/gsettings get org.gnome.desktop.interface gtk-theme
+    /usr/bin/sudo -u coolblock /usr/bin/gsettings get org.gnome.desktop.interface gtk-theme
     echo -e "${c_rst}"
 
-    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR="/run/user/${user_id}" /usr/bin/gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
+    /usr/bin/sudo -u coolblock /usr/bin/gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
     echo -ne "${c_ylw} org.gnome.desktop.interface color-scheme: "
-    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR="/run/user/${user_id}" /usr/bin/gsettings get org.gnome.desktop.interface color-scheme
+    /usr/bin/sudo -u coolblock /usr/bin/gsettings get org.gnome.desktop.interface color-scheme
     echo -e "${c_rst}"
 
     echo -e "${c_prpl}>> Configuring screen keyboard ..${c_rst}"
-    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR="/run/user/${user_id}" /usr/bin/gsettings set org.gnome.desktop.a11y.applications screen-keyboard-enabled true
+    /usr/bin/sudo -u coolblock /usr/bin/gsettings set org.gnome.desktop.a11y.applications screen-keyboard-enabled true
     echo -ne "${c_ylw} org.gnome.desktop.a11y.applications screen-keyboard-enabled: "
-    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR="/run/user/${user_id}" /usr/bin/gsettings get org.gnome.desktop.a11y.applications screen-keyboard-enabled
-    echo -e "${c_rst}"
-    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR="/run/user/${user_id}" /usr/bin/gsettings set org.gnome.shell.extensions.keyboard always-on-top true
-    echo -ne "${c_ylw} org.gnome.shell.extensions.keyboard always-on-top: "
-    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR="/run/user/${user_id}" /usr/bin/gsettings get org.gnome.shell.extensions.keyboard always-on-top
+    /usr/bin/sudo -u coolblock /usr/bin/gsettings get org.gnome.desktop.a11y.applications screen-keyboard-enabled
     echo -e "${c_rst}"
 
+    ## No such schema “org.gnome.shell.extensions.keyboard”
+    # /usr/bin/sudo -u coolblock /usr/bin/gsettings set org.gnome.shell.extensions.keyboard always-on-top true
+    # echo -ne "${c_ylw} org.gnome.shell.extensions.keyboard always-on-top: "
+    # /usr/bin/sudo -u coolblock /usr/bin/gsettings get org.gnome.shell.extensions.keyboard always-on-top
+    # echo -e "${c_rst}"
+
     echo -e "${c_prpl}>> Disabling screen reader ..${c_rst}"
-    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR="/run/user/${user_id}" /usr/bin/gsettings set org.gnome.desktop.a11y.applications screen-reader-enabled false
+    /usr/bin/sudo -u coolblock /usr/bin/gsettings set org.gnome.desktop.a11y.applications screen-reader-enabled false
     echo -ne "${c_ylw} org.gnome.desktop.a11y.applications screen-reader-enabled: "
-    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR="/run/user/${user_id}" /usr/bin/gsettings get org.gnome.desktop.a11y.applications screen-reader-enabled
+    /usr/bin/sudo -u coolblock /usr/bin/gsettings get org.gnome.desktop.a11y.applications screen-reader-enabled
     echo -e "${c_rst}"
 
     echo -e "${c_prpl}>> Disabling screen magnifier ..${c_rst}"
-    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR="/run/user/${user_id}" /usr/bin/gsettings set org.gnome.desktop.a11y.applications screen-magnifier-enabled false
+    /usr/bin/sudo -u coolblock /usr/bin/gsettings set org.gnome.desktop.a11y.applications screen-magnifier-enabled false
     echo -ne "${c_ylw} org.gnome.desktop.a11y.applications screen-magnifier-enabled: "
-    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR="/run/user/${user_id}" /usr/bin/gsettings get org.gnome.desktop.a11y.applications screen-magnifier-enabled
+    /usr/bin/sudo -u coolblock /usr/bin/gsettings get org.gnome.desktop.a11y.applications screen-magnifier-enabled
     echo -e "${c_rst}"
 
     echo -e "${c_prpl}>> Setting branding wallpaper ..${c_rst}"
     declare -r wallpaper_path="${pdir}/wallpaper.png"
-    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR="/run/user/${user_id}" /usr/bin/curl -Lso "${wallpaper_path}" "https://downloads.coolblock.com/panel/wallpaper.png"
-    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR="/run/user/${user_id}" /usr/bin/gsettings set org.gnome.desktop.background picture-uri "file://${wallpaper_path}"
+    /usr/bin/sudo -u coolblock /usr/bin/curl -Lso "${wallpaper_path}" "https://downloads.coolblock.com/panel/wallpaper.png"
+    /usr/bin/sudo -u coolblock /usr/bin/gsettings set org.gnome.desktop.background picture-uri "file://${wallpaper_path}"
     echo -ne "${c_ylw} org.gnome.desktop.background picture-uri: "
-    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR="/run/user/${user_id}" /usr/bin/gsettings get org.gnome.desktop.background picture-uri
+    /usr/bin/sudo -u coolblock /usr/bin/gsettings get org.gnome.desktop.background picture-uri
     echo -e "${c_rst}"
 
-    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR="/run/user/${user_id}" /usr/bin/gsettings set org.gnome.desktop.background picture-uri-dark "file://${wallpaper_path}"
+    /usr/bin/sudo -u coolblock /usr/bin/gsettings set org.gnome.desktop.background picture-uri-dark "file://${wallpaper_path}"
     echo -ne "${c_ylw} org.gnome.desktop.background picture-uri-dark: "
-    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR="/run/user/${user_id}" /usr/bin/gsettings get org.gnome.desktop.background picture-uri-dark
+    /usr/bin/sudo -u coolblock /usr/bin/gsettings get org.gnome.desktop.background picture-uri-dark
     echo -e "${c_rst}"
 
     return 0
@@ -381,6 +387,9 @@ function install_gui() {
 function install_browser() {
 
     declare -r user_id=$(/usr/bin/id -u coolblock)
+
+    export XDG_RUNTIME_DIR="/run/user/${user_id}"
+    export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/${RUSER_UID}/bus"
 
     echo -e "${c_cyan}>> Installing Mozilla Firefox (if not installed already) ..${c_rst}"
     /usr/bin/apt update
@@ -415,8 +424,8 @@ function install_browser() {
     } > /etc/firefox/policies/policies.json
 
     echo -e "${c_prpl}>> Enabling browser services to start on boot ..${c_rst}"
-    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR="/run/user/${user_id}" /usr/bin/systemctl --user daemon-reload
-    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR="/run/user/${user_id}" /usr/bin/systemctl --user enable coolblock-browser.service
+    /usr/bin/sudo -u coolblock /usr/bin/systemctl --user daemon-reload
+    /usr/bin/sudo -u coolblock /usr/bin/systemctl --user enable coolblock-browser.service
 
     return 0
 }
@@ -424,6 +433,9 @@ function install_browser() {
 function install_panel() {
 
     declare -r user_id=$(/usr/bin/id -u coolblock)
+
+    export XDG_RUNTIME_DIR="/run/user/${user_id}"
+    export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/${RUSER_UID}/bus"
 
     declare mysql_backup_file=""
     declare mysql_users_backup_file=""
@@ -450,14 +462,14 @@ function install_panel() {
 
     echo -e "${c_prpl}>> Generating certificates (if not already) ..${c_rst}"
     if [ -f "${pdir}/docker-compose.yml" ]; then
-        /usr/bin/sudo -u coolblock /usr/bin/docker compose -f "${pdir}/docker-compose.yml" up -d proxy
+        /usr/bin/docker compose -f "${pdir}/docker-compose.yml" up -d proxy
         /usr/bin/timeout 5 /usr/bin/docker compose -f "${pdir}/docker-compose.yml" logs -f proxy || /usr/bin/true
-        /usr/bin/sudo -u coolblock /usr/bin/docker compose -f "${pdir}/docker-compose.yml" down proxy
+        /usr/bin/docker compose -f "${pdir}/docker-compose.yml" down proxy
     fi
 
     echo -e "${c_prpl}>> Backing up mysql database (if available) ..${c_rst}"
     if [[ -f "/home/coolblock/.my.cnf" && -f "${pdir}/docker-compose.yml" ]]; then
-        /usr/bin/sudo -u coolblock /usr/bin/docker compose -f "${pdir}/docker-compose.yml" up -d mysql
+        /usr/bin/docker compose -f "${pdir}/docker-compose.yml" up -d mysql
         echo -e "${c_ylw}>> Waiting for mysql database ..${c_rst}"
         while :; do
             /usr/bin/sleep 1
@@ -478,8 +490,8 @@ function install_panel() {
 
     echo -e "${c_prpl}>> Stopping services (if running) ..${c_rst}"
     if [ -f "${pdir}/docker-compose.yml" ]; then
-        /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR="/run/user/${user_id}" /usr/bin/systemctl --user stop coolblock-panel.service \
-            || /usr/bin/sudo -u coolblock /usr/bin/docker compose -f "${pdir}/docker-compose.yml" down
+        /usr/bin/sudo -u coolblock /usr/bin/systemctl --user stop coolblock-panel.service \
+            || /usr/bin/docker compose -f "${pdir}/docker-compose.yml" down
     fi
 
     echo -e "${c_prpl}>> Downloading /usr/bin/docker deployment file ..${c_rst}"
@@ -496,7 +508,7 @@ function install_panel() {
         "${pdir}/docker-compose.yml"
 
     echo -e "${c_prpl}>> Pulling /usr/bin/docker images ..${c_rst}"
-    /usr/bin/sudo -u coolblock /usr/bin/docker compose -f "${pdir}/docker-compose.yml" pull
+    /usr/bin/docker compose -f "${pdir}/docker-compose.yml" pull
 
     echo -e "${c_prpl}>> Backing up existing environment file (if available).. ${c_rst}"
     if [ -f "${pdir}/.env" ]; then
@@ -505,7 +517,7 @@ function install_panel() {
 
     echo -e "${c_prpl}>> Generating secrets (old ones will be kept, if available).. ${c_rst}"
     if [ -f "${pdir}/.env.bak" ]; then
-        old_env=$(cat "${pdir}/.env.bak")
+        old_env=$(/usr/bin/cat "${pdir}/.env.bak")
         jwt_secret=$(/usr/bin/awk -F= '/^CB_PANEL_JWT_SECRET/{print $2}' <<< "${old_env}" | /usr/bin/tr -d "'\n")
         mysql_password=$(/usr/bin/awk -F= '/^MYSQL_PASSWORD/{print $2}' <<< "${old_env}" | /usr/bin/tr -d "'\n")
         mysql_root_password=$(/usr/bin/awk -F= '/^MYSQL_ROOT_PASSWORD/{print $2}' <<< "${old_env}" | /usr/bin/tr -d "'\n")
@@ -557,8 +569,8 @@ function install_panel() {
 
     echo -e "${c_prpl}>> Patching mysql database and restoring users (if applicable) ..${c_rst}"
     if [[ -f "${pdir}/backup/coolblock-panel.sql" && -f "${pdir}/backup/coolblock-panel_users.sql" ]]; then
-        /usr/bin/sudo -u coolblock /usr/bin/docker volume rm panel_coolblock-panel-web-database-data
-        /usr/bin/sudo -u coolblock /usr/bin/docker compose -f "${pdir}/docker-compose.yml" up -d /usr/bin/mysql
+        /usr/bin/docker volume rm panel_coolblock-panel-web-database-data
+        /usr/bin/docker compose -f "${pdir}/docker-compose.yml" up -d /usr/bin/mysql
         echo -e "${c_ylw}>> Waiting for mysql database ..${c_rst}"
         while :; do
             /usr/bin/sleep 1
@@ -567,8 +579,8 @@ function install_panel() {
         done
 
         /usr/bin/sudo -u coolblock /usr/bin/mysql --defaults-file=/home/coolblock/.my.cnf coolblock-panel < "${pdir}/backup/coolblock-panel_users.sql"
-        /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR="/run/user/${user_id}" /usr/bin/systemctl --user stop coolblock-panel.service \
-            || /usr/bin/sudo -u coolblock /usr/bin/docker compose -f "${pdir}/docker-compose.yml" down
+        /usr/bin/sudo -u coolblock /usr/bin/systemctl --user stop coolblock-panel.service \
+            || /usr/bin/docker compose -f "${pdir}/docker-compose.yml" down
     fi
 
     echo -e "${c_prpl}>> Creating Systemd service for Coolblock Panel Core ..${c_rst}"
@@ -592,9 +604,10 @@ function install_panel() {
     } > /home/coolblock/.config/systemd/user/coolblock-panel.service
     /usr/bin/chown -v coolblock:coolblock /home/coolblock/.config/systemd/user/coolblock-panel.service
 
+    #TODO manually place the automatic service "enable" to the required directory/file and do not use /usr/bin/systemctl --user enable
     echo -e "${c_prpl}>> Enabling core services to start on boot ..${c_rst}"
-    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR="/run/user/${user_id}" /usr/bin/systemctl --user daemon-reload
-    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR="/run/user/${user_id}" /usr/bin/systemctl --user enable coolblock-panel.service
+    /usr/bin/sudo -u coolblock /usr/bin/systemctl --user daemon-reload
+    /usr/bin/sudo -u coolblock /usr/bin/systemctl --user enable coolblock-panel.service
 
     # echo -e "${c_prpl}>> Deploying services ..${c_rst}"
     # /usr/bin/sudo -u coolblock /usr/bin/docker compose -f "${pdir}/docker-compose.yml" up -d
