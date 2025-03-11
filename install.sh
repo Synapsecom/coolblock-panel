@@ -404,13 +404,14 @@ function install_browser() {
         echo "After=graphical.target"
         echo ""
         echo "[Service]"
+        echo "User=coolblock"
+        echo "Group=coolblock"
         echo "ExecStart=/bin/bash -c 'while : ; do /usr/bin/pgrep firefox >/dev/null || { ${browser_docker_check_cmd} && ${browser_certs_cmd} && ${browser_cmd} ; } ; /usr/bin/sleep 5; done'"
         echo "Restart=no"
         echo ""
         echo "[Install]"
         echo "WantedBy=default.target"
-    } > /home/coolblock/.config/systemd/user/coolblock-browser.service
-    /usr/bin/chown -v coolblock:coolblock /home/coolblock/.config/systemd/user/coolblock-browser.service
+    } > /etc/systemd/system/coolblock-browser.service
 
     echo -e "${c_prpl}>> Creating browser policies ..${c_rst}"
     {
@@ -424,8 +425,8 @@ function install_browser() {
     } > /etc/firefox/policies/policies.json
 
     echo -e "${c_prpl}>> Enabling browser services to start on boot ..${c_rst}"
-    /usr/bin/sudo -u coolblock /usr/bin/mkdir -pv /home/coolblock/.config/systemd/user/multi-user.target.wants
-    /usr/bin/sudo -u coolblock /usr/bin/ln -sv /home/coolblock/.config/systemd/user/coolblock-browser.service /home/coolblock/.config/systemd/user/multi-user.target.wants/coolblock-browser.service
+    /usr/bin/systemctl daemon-reload
+    /usr/bin/systemctl enable coolblock-browser.service
 
     return 0
 }
@@ -594,6 +595,8 @@ function install_panel() {
         echo "After=docker.service network-online.target"
         echo ""
         echo "[Service]"
+        echo "User=coolblock"
+        echo "Group=coolblock"
         echo "WorkingDirectory=${pdir}"
         echo "ExecStart=/bin/bash -c 'docker compose up -d'"
         echo "ExecStop=/bin/bash -c 'docker compose down'"
@@ -601,12 +604,11 @@ function install_panel() {
         echo ""
         echo "[Install]"
         echo "WantedBy=multi-user.target"
-    } > /home/coolblock/.config/systemd/user/coolblock-panel.service
-    /usr/bin/chown -v coolblock:coolblock /home/coolblock/.config/systemd/user/coolblock-panel.service
+    } > /etc/systemd/system/coolblock-panel.service
 
     echo -e "${c_prpl}>> Enabling core services to start on boot ..${c_rst}"
-    /usr/bin/sudo -u coolblock /usr/bin/mkdir -pv /home/coolblock/.config/systemd/user/multi-user.target.wants
-    /usr/bin/sudo -u coolblock /usr/bin/ln -sv /home/coolblock/.config/systemd/user/coolblock-panel.service /home/coolblock/.config/systemd/user/multi-user.target.wants/coolblock-panel.service
+    /usr/bin/systemctl daemon-reload
+    /usr/bin/systemctl enable coolblock-panel.service
 
     return 0
 }
