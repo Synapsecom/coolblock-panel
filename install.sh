@@ -380,11 +380,11 @@ function install_browser() {
     /usr/bin/apt update
     /usr/bin/apt install -y firefox
 
-    echo -e "${c_prpl}>> Creating watchdog service for Mozilla Firefox service (kiosk) ..${c_rst}"
+    echo -e "${c_prpl}>> Creating Systemd service for Coolblock Browser in kiosk mode ..${c_rst}"
     /usr/bin/sudo -u coolblock /usr/bin/mkdir -pv /home/coolblock/.config/systemd/user
     {
         echo "[Unit]"
-        echo "Description=Coolblock Browser - Watchdog for Mozilla Firefox (kiosk)"
+        echo "Description=Coolblock Browser - Browser Service"
         echo "After=graphical.target"
         echo ""
         echo "[Service]"
@@ -394,17 +394,19 @@ function install_browser() {
         echo ""
         echo "[Install]"
         echo "WantedBy=default.target"
-    } > /home/coolblock/.config/systemd/user/coolblock-browser-watchdog.service
-    /usr/bin/chown -v coolblock:coolblock /home/coolblock/.config/systemd/user/coolblock-browser-watchdog.service
+    } > /home/coolblock/.config/systemd/user/coolblock-browser.service
+    /usr/bin/chown -v coolblock:coolblock /home/coolblock/.config/systemd/user/coolblock-browser.service
 
-    echo -e "${c_prpl}>> Enabling browser services ..${c_rst}"
+    echo -e "${c_prpl}>> Enabling browser services to start on boot ..${c_rst}"
     /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR="/run/user/${user_id}" /usr/bin/systemctl --user daemon-reload
-    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR="/run/user/${user_id}" /usr/bin/systemctl --user enable coolblock-browser-watchdog.service
+    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR="/run/user/${user_id}" /usr/bin/systemctl --user enable coolblock-browser.service
 
     return 0
 }
 
 function install_panel() {
+
+    declare -r user_id=$(/usr/bin/id -u coolblock)
 
     declare mysql_backup_file=""
     declare mysql_users_backup_file=""
@@ -421,7 +423,7 @@ function install_panel() {
     echo -e "${c_prpl}>> Validating license ..${c_rst}"
     docker_login=$(echo "${license_key}" | /usr/bin/sudo -u coolblock /usr/bin/docker login --username "${serial_number}" --password-stdin registry.coolblock.com 2>&1)
     if ! /usr/bin/grep -qi "login succeed" <<< "${docker_login}"; then
-        echo -e "${c_red}>> ERROR: Invalid license. Please contact Coolblock staff.${c_rst}"
+        echo -e "${c_red}>> ERROR: Invalid license. Please contact Coolblock staff.${c_rst}" 2>/dev/null
         return 50
     fi
     echo -e "${c_grn}>> License is valid.${c_rst}"
@@ -452,7 +454,8 @@ function install_panel() {
 
     echo -e "${c_prpl}>> Stopping services (if running) ..${c_rst}"
     if [ -f "${pdir}/docker-compose.yml" ]; then
-        /usr/bin/sudo -u coolblock /usr/bin/docker compose -f "${pdir}/docker-compose.yml" down
+        /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR="/run/user/${user_id}" /usr/bin/systemctl --user stop coolblock-panel.service \
+            || /usr/bin/sudo -u coolblock /usr/bin/docker compose -f "${pdir}/docker-compose.yml" down
     fi
 
     echo -e "${c_prpl}>> Downloading /usr/bin/docker deployment file ..${c_rst}"
@@ -540,11 +543,37 @@ function install_panel() {
         done
 
         /usr/bin/sudo -u coolblock /usr/bin/mysql --defaults-file=/home/coolblock/.my.cnf coolblock-panel < "${pdir}/backup/coolblock-panel_users.sql"
-        /usr/bin/sudo -u coolblock /usr/bin/docker compose -f "${pdir}/docker-compose.yml" down
+        /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR="/run/user/${user_id}" /usr/bin/systemctl --user stop coolblock-panel.service \
+            || /usr/bin/sudo -u coolblock /usr/bin/docker compose -f "${pdir}/docker-compose.yml" down
     fi
 
-    echo -e "${c_prpl}>> Deploying services ..${c_rst}"
-    /usr/bin/sudo -u coolblock /usr/bin/docker compose -f "${pdir}/docker-compose.yml" up -d
+    echo -e "${c_prpl}>> Creating Systemd service for Coolblock Panel Core ..${c_rst}"
+    /usr/bin/sudo -u coolblock /usr/bin/mkdir -pv /home/coolblock/.config/systemd/user
+    {
+        echo "[Unit]"
+        echo "Description=Coolblock Panel - Core - Docker Services"
+        echo "Requires=docker.service"
+        echo "After=docker.service network-online.target"
+        echo ""
+        echo "[Service]"
+        echo "User=coolblock"
+        echo "Group=coolblock"
+        echo "WorkingDirectory=${pdir}"
+        echo "ExecStart=/bin/bash -c 'docker compose up -d'"
+        echo "ExecStop=/bin/bash -c 'docker compose down'"
+        echo "Restart=no"
+        echo ""
+        echo "[Install]"
+        echo "WantedBy=multi-user.target"
+    } > /home/coolblock/.config/systemd/user/coolblock-panel.service
+    /usr/bin/chown -v coolblock:coolblock /home/coolblock/.config/systemd/user/coolblock-panel.service
+
+    echo -e "${c_prpl}>> Enabling core services to start on boot ..${c_rst}"
+    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR="/run/user/${user_id}" /usr/bin/systemctl --user daemon-reload
+    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR="/run/user/${user_id}" /usr/bin/systemctl --user enable coolblock-panel.service
+
+    # echo -e "${c_prpl}>> Deploying services ..${c_rst}"
+    # /usr/bin/sudo -u coolblock /usr/bin/docker compose -f "${pdir}/docker-compose.yml" up -d
 
     return 0
 }
