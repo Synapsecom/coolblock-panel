@@ -2,6 +2,7 @@
 # Author: Sotirios Roussis <s.roussis@synapsecom.gr>
 
 # set -e
+export DISPLAY=:0
 
 declare -r sdir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 declare -r pdir="/home/coolblock/panel"
@@ -24,7 +25,7 @@ declare -A docker_tags=(
     ["api"]="latest"
     ["proxy"]="latest"
 )
-declare -r firefox_command="/usr/bin/firefox --kiosk --no-remote --disable-features=TranslateUI --disable-sync --disable-crash-reporter --disable-pinch --disable-session-crashed-bubble --url https://localhost"
+declare -r firefox_command="/usr/bin/firefox --kiosk --no-remote --disable-features=TranslateUI --disable-sync --disable-crash-reporter --disable-pinch --disable-session-crashed-bubble --safe-mode --url https://localhost"
 
 # overriden by args
 declare tank_model=""
@@ -190,7 +191,7 @@ function create_user() {
 
     echo -e "${c_prpl}>> Creating system user 'coolblock' (if required) ..${c_rst}"
     /usr/sbin/useradd --home-dir /home/coolblock --create-home --shell /bin/bash coolblock
-    /usr/sbin/usermod -aG /usr/bin/sudo coolblock
+    /usr/sbin/usermod -aG sudo coolblock
     /usr/sbin/usermod -aG docker coolblock
     /usr/bin/chage -I -1 -m 0 -M 99999 -E -1 coolblock
 
@@ -224,12 +225,17 @@ function install_prerequisites() {
     echo -e "${c_cyan}>> Upgrading system (if required) ..${c_rst}"
     /usr/bin/apt full-upgrade -y
 
+    echo -e "${c_cyan}>> Flashing firmware (if required) ..${c_rst}"
+    /usr/bin/fwupdmgr get-upgrades
+    echo "n" | /usr/bin/fwupdmgr upgrade -y
+
     echo -e "${c_cyan}>> Installing helper packages (if not installed already) ..${c_rst}"
     apt install -y \
-        sudo vim nano \
-        net-tools dnsutils tcpdump traceroute \
-        curl wget \
-        git jq yq \
+        sudo \
+        vim nano \
+        iputils-ping net-tools dnsutils tcpdump traceroute \
+        git curl wget \
+        jq yq \
         ca-certificates openssl \
         mariadb-client
 
@@ -267,32 +273,98 @@ function install_gui() {
     echo -e "${c_prpl}>> Configuring auto-login ..${c_rst}"
     /usr/bin/mkdir -pv /etc/gdm3/
     {
+        echo "[chooser]"
+        echo "Multicast=false"
+        echo
         echo "[daemon]"
         echo "AutomaticLoginEnable=true"
         echo "AutomaticLogin=coolblock"
-    } > /etc/gdm3/coolblock.conf
+        echo
+        echo "[security]"
+        echo "DisallowTCP=true"
+        echo
+        echo "[xdmcp]"
+        echo "Enable=false"
+    } > /etc/gdm3/custom.conf
 
-    echo -e "${c_prpl}>> Disabling screen blanking and power saving ..${c_rst}"
+    echo -e "${c_prpl}>> Disabling screen blanking, power saving and suspend ..${c_rst}"
     /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR=/run/user/$(/usr/bin/id -u coolblock) /usr/bin/gsettings set org.gnome.desktop.session idle-delay 0
+    echo -ne "${c_ylw} org.gnome.desktop.session idle-delay: "
+    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR=/run/user/$(/usr/bin/id -u coolblock) /usr/bin/gsettings get org.gnome.desktop.session idle-delay
+    echo -e "${c_rst}"
+
     /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR=/run/user/$(/usr/bin/id -u coolblock) /usr/bin/gsettings set org.gnome.desktop.screensaver lock-enabled false
+    echo -ne "${c_ylw} org.gnome.desktop.screensaver lock-enabled: "
+    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR=/run/user/$(/usr/bin/id -u coolblock) /usr/bin/gsettings get org.gnome.desktop.screensaver lock-enabled
+    echo -e "${c_rst}"
+
     /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR=/run/user/$(/usr/bin/id -u coolblock) /usr/bin/gsettings set org.gnome.desktop.lockdown disable-lock-screen true
+    echo -ne "${c_ylw} org.gnome.desktop.lockdown disable-lock-screen: "
+    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR=/run/user/$(/usr/bin/id -u coolblock) /usr/bin/gsettings get org.gnome.desktop.lockdown disable-lock-screen
+    echo -e "${c_rst}"
+
+    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR=/run/user/$(/usr/bin/id -u coolblock) /usr/bin/gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type 'nothing'
+    echo -ne "${c_ylw} org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type: "
+    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR=/run/user/$(/usr/bin/id -u coolblock) /usr/bin/gsettings get org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type
+    echo -e "${c_rst}"
+
+    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR=/run/user/$(/usr/bin/id -u coolblock) /usr/bin/gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-battery-type 'nothing'
+    echo -ne "${c_ylw} org.gnome.settings-daemon.plugins.power sleep-inactive-battery-type: "
+    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR=/run/user/$(/usr/bin/id -u coolblock) /usr/bin/gsettings get org.gnome.settings-daemon.plugins.power sleep-inactive-battery-type
+    echo -e "${c_rst}"
 
     echo -e "${c_prpl}>> Disabling multiple workspaces and enforcing to 1 ..${c_rst}"
     /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR=/run/user/$(/usr/bin/id -u coolblock) /usr/bin/gsettings set org.gnome.mutter dynamic-workspaces false
+    echo -ne "${c_ylw} org.gnome.mutter dynamic-workspaces: "
+    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR=/run/user/$(/usr/bin/id -u coolblock) /usr/bin/gsettings get org.gnome.mutter dynamic-workspaces
+    echo -e "${c_rst}"
+
     /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR=/run/user/$(/usr/bin/id -u coolblock) /usr/bin/gsettings set org.gnome.desktop.wm.preferences num-workspaces 1
+    echo -ne "${c_ylw} org.gnome.desktop.wm.preferences num-workspaces: "
+    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR=/run/user/$(/usr/bin/id -u coolblock) /usr/bin/gsettings get org.gnome.desktop.wm.preferences num-workspaces
+    echo -e "${c_rst}"
 
     echo -e "${c_prpl}>> Enabling system-wide dark mode ..${c_rst}"
     /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR=/run/user/$(/usr/bin/id -u coolblock) /usr/bin/gsettings set org.gnome.desktop.interface gtk-theme 'Adwaita-dark'
+    echo -ne "${c_ylw} org.gnome.desktop.interface gtk-theme: "
+    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR=/run/user/$(/usr/bin/id -u coolblock) /usr/bin/gsettings get org.gnome.desktop.interface gtk-theme
+    echo -e "${c_rst}"
+
     /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR=/run/user/$(/usr/bin/id -u coolblock) /usr/bin/gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
+    echo -ne "${c_ylw} org.gnome.desktop.interface color-scheme: "
+    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR=/run/user/$(/usr/bin/id -u coolblock) /usr/bin/gsettings get org.gnome.desktop.interface color-scheme
+    echo -e "${c_rst}"
 
     echo -e "${c_prpl}>> Configuring screen keyboard ..${c_rst}"
     /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR=/run/user/$(/usr/bin/id -u coolblock) /usr/bin/gsettings set org.gnome.desktop.a11y.applications screen-keyboard-enabled true
+    echo -ne "${c_ylw} org.gnome.desktop.a11y.applications screen-keyboard-enabled: "
+    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR=/run/user/$(/usr/bin/id -u coolblock) /usr/bin/gsettings get org.gnome.desktop.a11y.applications screen-keyboard-enabled
+    echo -e "${c_rst}"
 
     echo -e "${c_prpl}>> Disabling screen reader ..${c_rst}"
     /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR=/run/user/$(/usr/bin/id -u coolblock) /usr/bin/gsettings set org.gnome.desktop.a11y.applications screen-reader-enabled false
+    echo -ne "${c_ylw} org.gnome.desktop.a11y.applications screen-reader-enabled: "
+    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR=/run/user/$(/usr/bin/id -u coolblock) /usr/bin/gsettings get org.gnome.desktop.a11y.applications screen-reader-enabled
+    echo -e "${c_rst}"
 
     echo -e "${c_prpl}>> Disabling screen magnifier ..${c_rst}"
     /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR=/run/user/$(/usr/bin/id -u coolblock) /usr/bin/gsettings set org.gnome.desktop.a11y.applications screen-magnifier-enabled false
+    echo -ne "${c_ylw} org.gnome.desktop.a11y.applications screen-magnifier-enabled: "
+    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR=/run/user/$(/usr/bin/id -u coolblock) /usr/bin/gsettings get org.gnome.desktop.a11y.applications screen-magnifier-enabled
+    echo -e "${c_rst}"
+
+    echo -e "${c_prpl}>> Setting branding wallpaper ..${c_rst}"
+    declare -r wallpaper_path="${pdir}/wallpaper.png"
+    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR=/run/user/$(/usr/bin/id -u coolblock) /usr/bin/curl -Lso "${wallpaper_path}" "https://downloads.coolblock.com/panel/wallpaper.png"
+    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR=/run/user/$(/usr/bin/id -u coolblock) /usr/bin/gsettings set org.gnome.desktop.background picture-uri "file://${wallpaper_path}"
+    echo -ne "${c_ylw} org.gnome.desktop.background picture-uri: "
+    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR=/run/user/$(/usr/bin/id -u coolblock) /usr/bin/gsettings get org.gnome.desktop.background picture-uri
+    echo -e "${c_rst}"
+
+    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR=/run/user/$(/usr/bin/id -u coolblock) /usr/bin/gsettings set org.gnome.desktop.background picture-uri-dark "file://${wallpaper_path}"
+    echo -ne "${c_ylw} org.gnome.desktop.background picture-uri-dark: "
+    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR=/run/user/$(/usr/bin/id -u coolblock) /usr/bin/gsettings get org.gnome.desktop.background picture-uri-dark
+    echo -e "${c_rst}"
 
     return 0
 }
@@ -302,23 +374,6 @@ function install_browser() {
     /usr/bin/apt update
     /usr/bin/apt install -y firefox
 
-    echo -e "${c_prpl}>> Creating Mozilla Firefox service (kiosk) ..${c_rst}"
-    /usr/bin/sudo -u coolblock /usr/bin/mkdir -pv /home/coolblock/.config/systemd/user
-    {
-        echo "[Unit]"
-        echo "Description=Coolblock Browser - Mozilla Firefox (kiosk)"
-        echo "After=graphical.target"
-        echo ""
-        echo "[Service]"
-        echo "ExecStart=${firefox_command}"
-        echo "Restart=always"
-        echo "RestartSec=5"
-        echo ""
-        echo "[Install]"
-        echo "WantedBy=default.target"
-    } > /home/coolblock/.config/systemd/user/coolblock-browser.service
-    /usr/bin/chown -v coolblock:coolblock /home/coolblock/.config/systemd/user/coolblock-browser.service
-
     echo -e "${c_prpl}>> Creating watchdog service for Mozilla Firefox service (kiosk) ..${c_rst}"
     /usr/bin/sudo -u coolblock /usr/bin/mkdir -pv /home/coolblock/.config/systemd/user
     {
@@ -327,7 +382,7 @@ function install_browser() {
         echo "After=graphical.target"
         echo ""
         echo "[Service]"
-        echo "ExecStart=/bin/bash -c 'while :; do /usr/bin/p/usr/bin/grep firefox || ${firefox_command}; /usr/bin//usr/bin/sleep 5; done'"
+        echo "ExecStart=/bin/bash -c 'while :; do /usr/bin/pgrep firefox >/dev/null || ${firefox_command}; /usr/bin/sleep 5; done'"
         echo "Restart=always"
         echo "RestartSec=5"
         echo ""
@@ -338,7 +393,6 @@ function install_browser() {
 
     echo -e "${c_prpl}>> Enabling browser services ..${c_rst}"
     /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR=/run/user/$(/usr/bin/id -u coolblock) /usr/bin/systemctl --user daemon-reload
-    /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR=/run/user/$(/usr/bin/id -u coolblock) /usr/bin/systemctl --user enable coolblock-browser.service
     /usr/bin/sudo -u coolblock XDG_RUNTIME_DIR=/run/user/$(/usr/bin/id -u coolblock) /usr/bin/systemctl --user enable coolblock-browser-watchdog.service
 
     return 0
@@ -489,13 +543,37 @@ function install_panel() {
     return 0
 }
 
+function set_crons() {
+    echo -e "${c_cyan}>> Downloading housekeeping script ..${c_rst}"
+    _download "https://downloads.coolblock.com/panel/housekeeping.sh" "${pdir}/housekeeping.sh" coolblock
+
+    echo -e "${c_prpl}>> Setting up scheduled tasks ..${c_rst}"
+    {
+        echo "# Coolblock Panel - Scheduled Tasks"
+        echo "### DO NOT EDIT ###"
+        echo "*/5 * * * * /bin/bash ${pdir}/housekeeping.sh --"
+    } >> /etc/cron.d/coolblock
+
+    return 0
+}
+
+function debloat() {
+    echo -e "${c_prpl}>> Disabling unnecessary services ..${c_rst}"
+    /usr/bin/systemctl disable wpa_supplicant.service
+
+    return 0
+}
+
 function cleanup() {
     echo -e "${c_prpl}>> Cleaning up package manager ..${c_rst}"
     /usr/bin/apt autoremove -y
     /usr/bin/apt clean all
 
     echo -e "${c_prpl}>> Removing installation user ..${c_rst}"
-    /usr/sbin/userdel --force --remove ubuntu
+    /usr/sbin/userdel --force --remove ubuntu 2>/dev/null
+    /usr/sbin/userdel --force --remove installer 2>/dev/null
+    /usr/sbin/userdel --force --remove test 2>/dev/null
+    /usr/sbin/userdel --force --remove ci 2>/dev/null
 
     return 0
 }
