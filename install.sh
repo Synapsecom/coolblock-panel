@@ -616,6 +616,14 @@ function main() {
     declare -r install_panel_rc="${?}"
     [ "${install_panel_rc}" -ne 0 ] && return "${install_panel_rc}"
 
+    set_crons
+    declare -r set_crons_rc="${?}"
+    [ "${set_crons_rc}" -ne 0 ] && return "${set_crons_rc}"
+
+    debloat
+    declare -r debloat_rc="${?}"
+    [ "${debloat_rc}" -ne 0 ] && return "${debloat_rc}"
+
     cleanup
     declare -r cleanup_rc="${?}"
     [ "${cleanup_rc}" -ne 0 ] && return "${cleanup_rc}"
