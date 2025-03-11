@@ -604,6 +604,8 @@ function install_panel() {
         # echo "RemainAfterExit=true"
         echo "WorkingDirectory=${pdir}"
         # echo "ExecStart=/bin/bash -c 'docker compose up -d --remove-orphans'"
+        echo "Environment=DISPLAY=:0"
+        echo "Environment=XAUTHORITY=/home/coolblock/.Xauthority"
         echo "ExecStart=/bin/bash -c 'docker compose up --remove-orphans'"
         echo "ExecStop=/bin/bash -c 'docker compose down'"
         echo "Restart=no"
