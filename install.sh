@@ -25,7 +25,7 @@ declare -A docker_tags=(
     ["api"]="latest"
     ["proxy"]="latest"
 )
-declare -r browser_docker_check_cmd="/usr/bin/docker compose -f ${pdir}/docker-compose.yml ps | /usr/bin/grep -i frontend | /usr/bin/grep -vi database | /usr/bin/grep '(healthy)'"
+declare -r browser_docker_check_cmd="/usr/bin/docker compose -f ${pdir}/docker-compose.yml ps | /usr/bin/grep -i frontend | /usr/bin/grep -vi database | /usr/bin/grep \"(healthy)\""
 declare -r browser_certs_cmd="/usr/bin/cp -pv ${pdir}/certs/selfsigned.crt /usr/local/share/ca-certificates/ && /usr/sbin/update-ca-certificates"
 declare -r browser_cmd="/usr/bin/firefox --kiosk --new-window --no-remote --disable-features=TranslateUI --disable-sync --disable-crash-reporter --disable-pinch --disable-session-crashed-bubble --safe-mode --url https://localhost"
 
