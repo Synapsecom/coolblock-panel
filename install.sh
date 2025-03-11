@@ -424,7 +424,8 @@ function install_browser() {
     } > /etc/firefox/policies/policies.json
 
     echo -e "${c_prpl}>> Enabling browser services to start on boot ..${c_rst}"
-    /usr/bin/ln -sv /home/coolblock/.config/systemd/user/coolblock-browser.service /home/coolblock/.config/systemd/user/multi-user.target.wants/coolblock-browser.service
+    /usr/bin/sudo -u coolblock /usr/bin/mkdir -pv /home/coolblock/.config/systemd/user/multi-user.target.wants
+    /usr/bin/sudo -u coolblock /usr/bin/ln -sv /home/coolblock/.config/systemd/user/coolblock-browser.service /home/coolblock/.config/systemd/user/multi-user.target.wants/coolblock-browser.service
 
     return 0
 }
@@ -604,7 +605,8 @@ function install_panel() {
     /usr/bin/chown -v coolblock:coolblock /home/coolblock/.config/systemd/user/coolblock-panel.service
 
     echo -e "${c_prpl}>> Enabling core services to start on boot ..${c_rst}"
-    /usr/bin/ln -sv /home/coolblock/.config/systemd/user/coolblock-panel.service /home/coolblock/.config/systemd/user/multi-user.target.wants/coolblock-panel.service
+    /usr/bin/sudo -u coolblock /usr/bin/mkdir -pv /home/coolblock/.config/systemd/user/multi-user.target.wants
+    /usr/bin/sudo -u coolblock /usr/bin/ln -sv /home/coolblock/.config/systemd/user/coolblock-panel.service /home/coolblock/.config/systemd/user/multi-user.target.wants/coolblock-panel.service
 
     return 0
 }
