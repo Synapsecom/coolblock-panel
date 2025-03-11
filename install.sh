@@ -228,9 +228,9 @@ function install_prerequisites() {
     echo -e "${c_cyan}>> Upgrading system (if required) ..${c_rst}"
     /usr/bin/apt full-upgrade -y
 
-    echo -e "${c_cyan}>> Flashing firmware (if required) ..${c_rst}"
-    /usr/bin/fwupdmgr get-upgrades
-    echo "n" | /usr/bin/fwupdmgr upgrade -y
+    # echo -e "${c_cyan}>> Flashing firmware (if required) ..${c_rst}"
+    # /usr/bin/fwupdmgr get-upgrades
+    # echo "n" | /usr/bin/fwupdmgr upgrade -y
 
     echo -e "${c_cyan}>> Installing helper packages (if not installed already) ..${c_rst}"
     apt install -y \
