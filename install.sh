@@ -2,7 +2,7 @@
 # Author: Sotirios Roussis <s.roussis@synapsecom.gr>
 
 # set -e
-export DISPLAY=:0
+export DEBIAN_FRONTEND="noninteractive"
 
 declare -r sdir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 declare -r pdir="/home/coolblock/panel"
