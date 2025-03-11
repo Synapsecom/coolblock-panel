@@ -8,7 +8,11 @@
 
 ## Getting started
 
-1. Install latest Ubuntu Desktop LTS.
+1. Install latest Ubuntu Server 24.04 LTS.
+
+   - Prefer Ubuntu Server `minimized` (required)
+   - Install OpenSSH Server (required)
+   - Use the entire disk without LVM (optional)
 
 2. Run the bootstrap script to **install** or **upgrade** the stack:
 
