@@ -228,6 +228,7 @@ function install_prerequisites() {
     echo -e "${c_cyan}>> Upgrading system (if required) ..${c_rst}"
     /usr/bin/apt full-upgrade -y
 
+    ##TODO Deprecated
     # echo -e "${c_cyan}>> Flashing firmware (if required) ..${c_rst}"
     # /usr/bin/fwupdmgr get-upgrades
     # echo "n" | /usr/bin/fwupdmgr upgrade -y
@@ -404,8 +405,7 @@ function install_browser() {
         echo ""
         echo "[Service]"
         echo "ExecStart=/bin/bash -c 'while : ; do /usr/bin/pgrep firefox >/dev/null || { ${browser_docker_check_cmd} && ${browser_certs_cmd} && ${browser_cmd} ; } ; /usr/bin/sleep 5; done'"
-        echo "Restart=always"
-        echo "RestartSec=5"
+        echo "Restart=no"
         echo ""
         echo "[Install]"
         echo "WantedBy=default.target"
@@ -424,8 +424,7 @@ function install_browser() {
     } > /etc/firefox/policies/policies.json
 
     echo -e "${c_prpl}>> Enabling browser services to start on boot ..${c_rst}"
-    /usr/bin/sudo -u coolblock /usr/bin/systemctl --user daemon-reload
-    /usr/bin/sudo -u coolblock /usr/bin/systemctl --user enable coolblock-browser.service
+    /usr/bin/ln -sv /home/coolblock/.config/systemd/user/coolblock-browser.service /home/coolblock/.config/systemd/user/multi-user.target.wants/coolblock-browser.service
 
     return 0
 }
@@ -494,25 +493,27 @@ function install_panel() {
             || /usr/bin/docker compose -f "${pdir}/docker-compose.yml" down
     fi
 
-    echo -e "${c_prpl}>> Downloading /usr/bin/docker deployment file ..${c_rst}"
+    echo -e "${c_prpl}>> Downloading Docker deployment file ..${c_rst}"
     _download "https://downloads.coolblock.com/panel/docker-compose.yml.tmpl" "${pdir}/docker-compose.yml" coolblock
     if [ "${?}" -ne 0 ]; then
         return 60
     fi
 
-    echo -e "${c_prpl}>> Rendering /usr/bin/docker image tags in deployment file ..${c_rst}"
+    echo -e "${c_prpl}>> Rendering Docker image tags in deployment file ..${c_rst}"
     /usr/bin/sudo -u coolblock /usr/bin/sed -i \
         -e "s#__PANEL_WEB_VERSION__#${docker_tags[web]}#g" \
         -e "s#__PANEL_API_VERSION__#${docker_tags[api]}#g" \
         -e "s#__PANEL_PROXY_VERSION__#${docker_tags[proxy]}#g" \
         "${pdir}/docker-compose.yml"
 
-    echo -e "${c_prpl}>> Pulling /usr/bin/docker images ..${c_rst}"
-    /usr/bin/docker compose -f "${pdir}/docker-compose.yml" pull
+    echo -e "${c_prpl}>> Pulling Docker images (if available) ..${c_rst}"
+    if [ -f "${pdir}/.env" ]; then
+        /usr/bin/docker compose -f "${pdir}/docker-compose.yml" pull
+    fi
 
     echo -e "${c_prpl}>> Backing up existing environment file (if available).. ${c_rst}"
     if [ -f "${pdir}/.env" ]; then
-        /usr/bin/sudo -u coolblock cp -pv "${pdir}/.env" "${pdir}/.env.bak"
+        /usr/bin/sudo -u coolblock cp -pv "${pdir}/.env" "${pdir}/.env.bak" 2>/dev/null
     fi
 
     echo -e "${c_prpl}>> Generating secrets (old ones will be kept, if available).. ${c_rst}"
@@ -592,8 +593,6 @@ function install_panel() {
         echo "After=docker.service network-online.target"
         echo ""
         echo "[Service]"
-        echo "User=coolblock"
-        echo "Group=coolblock"
         echo "WorkingDirectory=${pdir}"
         echo "ExecStart=/bin/bash -c 'docker compose up -d'"
         echo "ExecStop=/bin/bash -c 'docker compose down'"
@@ -604,13 +603,8 @@ function install_panel() {
     } > /home/coolblock/.config/systemd/user/coolblock-panel.service
     /usr/bin/chown -v coolblock:coolblock /home/coolblock/.config/systemd/user/coolblock-panel.service
 
-    #TODO manually place the automatic service "enable" to the required directory/file and do not use /usr/bin/systemctl --user enable
     echo -e "${c_prpl}>> Enabling core services to start on boot ..${c_rst}"
-    /usr/bin/sudo -u coolblock /usr/bin/systemctl --user daemon-reload
-    /usr/bin/sudo -u coolblock /usr/bin/systemctl --user enable coolblock-panel.service
-
-    # echo -e "${c_prpl}>> Deploying services ..${c_rst}"
-    # /usr/bin/sudo -u coolblock /usr/bin/docker compose -f "${pdir}/docker-compose.yml" up -d
+    /usr/bin/ln -sv /home/coolblock/.config/systemd/user/coolblock-panel.service /home/coolblock/.config/systemd/user/multi-user.target.wants/coolblock-panel.service
 
     return 0
 }
