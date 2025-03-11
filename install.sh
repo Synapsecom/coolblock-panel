@@ -405,6 +405,7 @@ function install_browser() {
     {
         echo "[Unit]"
         echo "Description=Coolblock Browser - Browser Service"
+        echo "Requires=coolblock-panel.service"
         echo "After=coolblock-panel.service graphical.target"
         echo ""
         echo "[Service]"
@@ -600,8 +601,9 @@ function install_panel() {
         echo "[Service]"
         echo "User=coolblock"
         echo "Group=coolblock"
+        echo "RemainAfterExit=true"
         echo "WorkingDirectory=${pdir}"
-        echo "ExecStart=/bin/bash -c 'docker compose up -d'"
+        echo "ExecStart=/bin/bash -c 'docker compose up -d --remove-orphans'"
         echo "ExecStop=/bin/bash -c 'docker compose down'"
         echo "Restart=no"
         echo ""
