@@ -266,6 +266,13 @@ function install_docker() {
         /usr/bin/docker network ls --filter=name=coolblock-panel
     fi
 
+    echo -e ">> ${c_prpl} Configuring Docker daemon ..${c_rst}"
+    {
+        echo '{'
+        echo '    "log-driver": "journald"'
+        echo '}'
+    } > /etc/docker/daemon.json
+
     return 0
 }
 
@@ -395,11 +402,10 @@ function install_browser() {
     /usr/bin/apt install -y firefox
 
     echo -e "${c_prpl}>> Creating Systemd service for Coolblock Browser in kiosk mode ..${c_rst}"
-    /usr/bin/sudo -u coolblock /usr/bin/mkdir -pv /home/coolblock/.config/systemd/user
     {
         echo "[Unit]"
         echo "Description=Coolblock Browser - Browser Service"
-        echo "After=graphical.target"
+        echo "After=coolblock-panel.service graphical.target"
         echo ""
         echo "[Service]"
         echo "User=coolblock"
@@ -585,10 +591,9 @@ function install_panel() {
     fi
 
     echo -e "${c_prpl}>> Creating Systemd service for Coolblock Panel Core ..${c_rst}"
-    /usr/bin/sudo -u coolblock /usr/bin/mkdir -pv /home/coolblock/.config/systemd/user
     {
         echo "[Unit]"
-        echo "Description=Coolblock Panel - Core - Docker Services"
+        echo "Description=Coolblock Panel - Core Services"
         echo "Requires=docker.service"
         echo "After=docker.service network-online.target"
         echo ""
