@@ -678,13 +678,13 @@ function main() {
     declare -r install_prerequisites_rc="${?}"
     [ "${install_prerequisites_rc}" -ne 0 ] && return "${install_prerequisites_rc}"
 
-    create_user
-    declare -r create_user_rc="${?}"
-    [ "${create_user_rc}" -ne 0 ] && return "${create_user_rc}"
-
     install_docker
     declare -r install_docker_rc="${?}"
     [ "${install_docker_rc}" -ne 0 ] && return "${install_docker_rc}"
+
+    create_user
+    declare -r create_user_rc="${?}"
+    [ "${create_user_rc}" -ne 0 ] && return "${create_user_rc}"
 
     install_gui
     declare -r install_gui_rc="${?}"
