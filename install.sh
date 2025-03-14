@@ -150,7 +150,7 @@ function is_root() {
     return 0
 }
 
-function _download() {
+function download() {
 
     declare -r url="${1}"
     declare -r output_file="${2}"
@@ -199,7 +199,7 @@ function create_user() {
     /usr/bin/chage -I -1 -m 0 -M 99999 -E -1 coolblock
 
     echo -e "${c_prpl}>> Downloading Coolblock SSH public keys (will merge existing) ..${c_rst}"
-    _download "https://downloads.coolblock.com/keys" "${tmp_ssh_keys}"
+    download "https://downloads.coolblock.com/keys" "${tmp_ssh_keys}"
     if [ "${?}" -ne 0 ]; then
         return 1
     fi
@@ -227,11 +227,6 @@ function install_prerequisites() {
 
     echo -e "${c_cyan}>> Upgrading system (if required) ..${c_rst}"
     /usr/bin/apt full-upgrade -y
-
-    ##TODO Deprecated
-    # echo -e "${c_cyan}>> Flashing firmware (if required) ..${c_rst}"
-    # /usr/bin/fwupdmgr get-upgrades
-    # echo "n" | /usr/bin/fwupdmgr upgrade -y
 
     echo -e "${c_cyan}>> Installing helper packages (if not installed already) ..${c_rst}"
     apt install -y \
@@ -501,7 +496,7 @@ function install_panel() {
     fi
 
     echo -e "${c_prpl}>> Downloading Docker deployment file ..${c_rst}"
-    _download "https://downloads.coolblock.com/panel/docker-compose.yml.tmpl" "${pdir}/docker-compose.yml" coolblock
+    download "https://downloads.coolblock.com/panel/docker-compose.yml.tmpl" "${pdir}/docker-compose.yml" coolblock
     if [ "${?}" -ne 0 ]; then
         return 60
     fi
@@ -540,7 +535,7 @@ function install_panel() {
     fi
 
     echo -e "${c_prpl}>> Downloading environment file ..${c_rst}"
-    _download "https://downloads.coolblock.com/panel/env.tmpl" "${pdir}/.env" coolblock
+    download "https://downloads.coolblock.com/panel/env.tmpl" "${pdir}/.env" coolblock
     if [ "${?}" -ne 0 ]; then
         return 70
     fi
@@ -558,7 +553,7 @@ function install_panel() {
         "${pdir}/.env"
 
     echo -e "${c_prpl}>> Downloading database schema file ..${c_rst}"
-    _download "https://downloads.coolblock.com/panel/init.sql" "${pdir}/init.sql" coolblock
+    download "https://downloads.coolblock.com/panel/init.sql" "${pdir}/init.sql" coolblock
     if [ "${?}" -ne 0 ]; then
         return 80
     fi
@@ -621,13 +616,63 @@ function install_panel() {
     return 0
 }
 
-function set_crons() {
+function configure_sysctl() {
+    echo -e "${c_cyan}>> Disabling Magic SysRq ..${c_rst}"
+    {
+        echo "# Coolblock Panel - Magic SysRq"
+        echo "### DO NOT EDIT ###"
+        echo "kernel.sysrq = 0"
+    } > /etc/sysctl.d/10-magic-sysrq.conf
+
+    echo -e "${c_cyan}>> Disabling IPv6 ..${c_rst}"
+    {
+        echo "# Coolblock Panel - IPv6"
+        echo "### DO NOT EDIT ###"
+        echo "net.ipv6.conf.all.disable_ipv6 = 1"
+        echo "net.ipv6.conf.default.disable_ipv6 = 1"
+        echo "net.ipv6.conf.lo.disable_ipv6 = 1"
+    } > /etc/sysctl.d/10-disable-ipv6.conf
+
+    return 0
+}
+
+function configure_network() {
+    echo -e "${c_cyan}>> Configuring network ..${c_rst}"
+    if [ "${CONFIGURE_NETWORK:-yes}" == "yes" ]; then
+        /usr/bin/rm -fv /etc/netplan/*
+
+        {
+            echo "# Coolblock Panel - Network"
+            echo "### DO NOT EDIT ###"
+            echo "network:"
+            echo "version: 2"
+            echo "renderer: networkd"
+            echo "ethernets:"
+            echo "  enp1s0:"
+            echo "    addresses:"
+            echo "      - 10.13.37.41/24"
+            echo "    routes:"
+            echo "      - to: default"
+            echo "        via: 10.13.37.1"
+            echo "    nameservers:"
+            echo "      addresses:"
+            echo "        - 1.1.1.1"
+            echo "        - 1.0.0.1"
+        } > /etc/netplan/99-coolblock.yaml
+    else
+        echo -e "${c_ylw}>> Skipping network configuration (CONFIGURE_NETWORK=no) ..${c_rst}"
+    fi
+
+    return 0
+}
+
+function configure_crons() {
     echo -e "${c_cyan}>> Downloading housekeeping script ..${c_rst}"
-    _download "https://downloads.coolblock.com/panel/housekeeping.sh" "${pdir}/housekeeping.sh" coolblock
+    download "https://downloads.coolblock.com/panel/housekeeping.sh" "${pdir}/housekeeping.sh" coolblock
 
     echo -e "${c_prpl}>> Setting up scheduled tasks ..${c_rst}"
     {
-        echo "# Coolblock Panel - Scheduled Tasks"
+        echo "# Coolblock Panel - Crons"
         echo "### DO NOT EDIT ###"
         echo "*/5 * * * * /bin/bash ${pdir}/housekeeping.sh --"
     } > /etc/cron.d/coolblock
@@ -646,7 +691,7 @@ function debloat() {
 
     echo -e "${c_prpl}>> Blacklisting unnecessary kernel modules ..${c_rst}"
     {
-        echo "# Coolblock Panel - Kernel Modules Blacklist"
+        echo "# Coolblock Panel - Blacklist Kernel Modules"
         echo "### DO NOT EDIT ###"
         echo "blacklist rtlwifi"
         echo "blacklist rtl8188ee"
@@ -722,9 +767,17 @@ function main() {
     declare -r install_browser_rc="${?}"
     [ "${install_browser_rc}" -ne 0 ] && return "${install_browser_rc}"
 
-    set_crons
-    declare -r set_crons_rc="${?}"
-    [ "${set_crons_rc}" -ne 0 ] && return "${set_crons_rc}"
+    configure_crons
+    declare -r configure_crons_rc="${?}"
+    [ "${configure_crons_rc}" -ne 0 ] && return "${configure_crons_rc}"
+
+    configure_sysctl
+    declare -r configure_sysctl_rc="${?}"
+    [ "${configure_sysctl_rc}" -ne 0 ] && return "${configure_sysctl_rc}"
+
+    configure_network
+    declare -r configure_network_rc="${?}"
+    [ "${configure_network_rc}" -ne 0 ] && return "${configure_network_rc}"
 
     debloat
     declare -r debloat_rc="${?}"
