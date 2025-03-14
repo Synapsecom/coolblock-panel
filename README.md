@@ -30,9 +30,9 @@
 - Services lifecycle
 
   ```bash
-  systemctl start coolblock-panel.service  # to start the services
-  systemctl restart coolblock-panel.service  # to restart the services
-  systemctl stop coolblock-panel.service  # to stop the services
+  sudo systemctl start coolblock-panel.service  # to start the services
+  sudo systemctl restart coolblock-panel.service  # to restart the services
+  sudo systemctl stop coolblock-panel.service  # to stop the services
   ```
 
 - Credentials
