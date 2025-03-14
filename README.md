@@ -8,12 +8,7 @@
 
 ## Getting started
 
-1. Install latest Ubuntu Server 24.04 LTS.
-
-   - Prefer Ubuntu Server `minimized` (required)
-   - Install OpenSSH Server (required)
-   - Use the entire disk without LVM (optional)
-
+1. Install latest Ubuntu Server 24.04 LTS. Please follow [this guide](INSTALLATION-ISO.md).
 2. Run the bootstrap script to **install** or **upgrade** the stack:
 
    > The script prepares the project in /home/coolblock/panel and keeps database dumps in /home/coolblock/panel/backup
