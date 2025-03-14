@@ -9,6 +9,8 @@ services:
       - '--api.insecure=true'
       - '--api.dashboard=true'
       - '--providers.docker'
+      - '--providers.file.directory=/etc/traefik'
+      - '--providers.file.watch=true'
       - '--accesslog=true'
       - '--accesslog.format=json'
       - '--entrypoints.web.address=:80'
