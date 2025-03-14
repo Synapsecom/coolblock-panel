@@ -222,7 +222,7 @@ function create_user() {
 }
 
 function install_prerequisites() {
-    echo -e "${c_cyan}>> Updating package manager's cache ..${c_rst}"
+        echo -e "${c_cyan}>> Updating package manager's cache ..${c_rst}"
     /usr/bin/apt update
 
     echo -e "${c_cyan}>> Upgrading system (if required) ..${c_rst}"
@@ -235,7 +235,7 @@ function install_prerequisites() {
         iputils-ping net-tools dnsutils tcpdump traceroute \
         git curl wget \
         jq yq \
-        ca-certificates openssl \
+        ca-certificates openssl gpg \
         mariadb-client
 
     return 0
@@ -392,14 +392,40 @@ function install_browser() {
     export XDG_RUNTIME_DIR="/run/user/${user_id}"
     export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/${RUSER_UID}/bus"
 
+    echo -e "${c_cyan}>> Installing Mozilla signing key ..${c_rst}"
+    /usr/bin/wget -q https://packages.mozilla.org/apt/repo-signing-key.gpg -O- \
+        | /usr/bin/gpg --dearmor \
+        | /usr/bin/tee /etc/apt/keyrings/packages.mozilla.org.gpg >/dev/null
+
+    echo -e "${c_prpl}>> Setting up APT preferences for Mozilla Firefox ..${c_rst}"
+    {
+        echo "Package: firefox*"
+        echo "Pin: origin packages.mozilla.org"
+        echo "Pin-Priority: 1001"
+    } > /etc/apt/preferences.d/mozilla
+
+    echo -e "${c_prpl}>> Setting up APT sources for Mozilla Firefox ..${c_rst}"
+    {
+        echo "Types: deb"
+        echo "URIs: https://packages.mozilla.org/apt"
+        echo "Suites: mozilla"
+        echo "Components: main"
+        echo "Signed-By: /etc/apt/keyrings/packages.mozilla.org.gpg"
+    } > /etc/apt/sources.list.d/mozilla.sources
+
+    echo -e "${c_prpl}>> Setting up APT unattended upgrades for Mozilla Firefox ..${c_rst}"
+    {
+        echo 'Unattended-Upgrade::Origins-Pattern { "archive=mozilla"; };'
+    } > /etc/apt/apt.conf.d/51unattended-upgrades-firefox
+
     echo -e "${c_cyan}>> Installing Mozilla Firefox (if not installed already) ..${c_rst}"
     /usr/bin/apt update
     /usr/bin/apt install -y firefox
 
-    echo -e "${c_prpl}>> Creating Systemd service for Coolblock Browser in kiosk mode ..${c_rst}"
+    echo -e "${c_prpl}>> Creating Systemd service for Mozilla Firefox in kiosk mode ..${c_rst}"
     {
         echo "[Unit]"
-        echo "Description=Coolblock Browser - Browser Service"
+        echo "Description=Coolblock Browser - Mozilla Firefox Service"
         echo "Requires=coolblock-panel.service"
         echo "After=coolblock-panel.service graphical.target"
         echo ""
@@ -413,18 +439,57 @@ function install_browser() {
         echo "WantedBy=default.target"
     } > /etc/systemd/system/coolblock-browser.service
 
-    echo -e "${c_prpl}>> Creating browser policies ..${c_rst}"
+    echo -e "${c_prpl}>> Creating Mozilla Firefox policies (based on https://github.com/mozilla/policy-templates/blob/master/linux/policies.json) ..${c_rst}"
+    /usr/bin/mkdir -pv /etc/firefox/policies
     {
         echo '{'
         echo '    "policies": {'
+        echo '        "CaptivePortal": false,'
+        echo '        "DisableBuiltinPDFViewer": true,'
+        echo '        "DisableDeveloperTools": true,'
+        echo '        "DisableFeedbackCommands": true,'
+        echo '        "DisableFirefoxAccounts": true,'
+        echo '        "DisableFirefoxScreenshots": true,'
+        echo '        "DisableFirefoxStudies": true,'
+        echo '        "DisableFormHistory": true,'
+        echo '        "DisableMasterPasswordCreation": true,'
+        echo '        "DisablePocket": true,'
+        echo '        "DisableProfileImport": true,'
+        echo '        "DisableTelemetry": true,'
+        echo '        "DisplayBookmarksToolbar": "never",'
+        echo '        "DontCheckDefaultBrowser": true,'
+        echo '        "HardwareAcceleration": true,'
+        echo '        "PasswordManagerEnabled": false,'
+        echo '        "PrintingEnabled": false,'
+        echo '        "BlockAboutSupport": true,'
+        echo '        "BlockAboutProfiles": true,'
+        echo '        "BlockAboutConfig": true,'
+        echo '        "BlockAboutAddons": true,'
+        echo '        "BackgroundAppUpdate": true,'
+        echo '        "ShowHomeButton": false,'
+        echo '        "TranslateEnabled": false,'
+        echo '        "SupportMenu": {'
+        echo '            "Title": "Coolblock Support Menu",'
+        echo '            "URL": "https://coolblock.com",'
+        echo '            "AccessKey": "5"'
+        echo '        },'
+        echo '        "UserMessaging": {'
+        echo '            "ExtensionRecommendations": false,'
+        echo '            "FeatureRecommendations": false,'
+        echo '            "UrlbarInterventions": false,'
+        echo '            "SkipOnboarding": true,'
+        echo '            "MoreFromMozilla": false,'
+        echo '            "FirefoxLabs": false,'
+        echo '            "Locked": true'
+        echo '        },'
         echo '        "Certificates": {'
-        echo '            "ImportEnterpriseRoots": true'
+        echo '            "Install": ["/home/coolblock/panel/certs/ca.crt"]'
         echo '        }'
         echo '    }'
         echo '}'
     } > /etc/firefox/policies/policies.json
 
-    echo -e "${c_prpl}>> Enabling browser services to start on boot ..${c_rst}"
+    echo -e "${c_prpl}>> Enabling Mozilla Firefox service to start on boot ..${c_rst}"
     /usr/bin/systemctl daemon-reload
     /usr/bin/systemctl enable coolblock-browser.service
 
