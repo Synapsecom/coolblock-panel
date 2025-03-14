@@ -11,7 +11,7 @@
 1. Install latest Ubuntu Server 24.04 LTS. Please follow [this guide](INSTALLATION-ISO.md).
 2. Run the bootstrap script to **install** or **upgrade** the stack:
 
-   > The script prepares the project in /home/coolblock/panel and keeps database dumps in /home/coolblock/panel/backup
+   > The script prepares the project in /home/coolblock/panel and keeps database dumps in /home/coolblock/panel/backup. The license key is expiring every year for security and it is required to contact us for key rotation.
 
    ```bash
    curl -fsSL https://downloads.coolblock.com/panel/install.sh | bash -s -- --tank-model <tank_model> --plc-model <plc_model> --serial-number <serial_number> --license-key <license_key>
@@ -19,7 +19,7 @@
 
 3. Login with the default credentials
 
-   > Should be changed afterwards `Gear Icon -> Change Password` and `Gear Icon -> Change PIN`
+   > MUST be changed afterwards `Gear Icon -> Change Password` and `Gear Icon -> Change PIN`
 
    | Username | Password | PIN  |
    | -------- | -------- | ---- |
@@ -27,28 +27,18 @@
 
 ## Adiministration
 
-- Starting the services
+- Services lifecycle
 
   ```bash
-  # as coolblock user
-  cd ~/panel
-  docker compose up -d
+  systemctl start coolblock-panel.service  # to start the services
+  systemctl restart coolblock-panel.service  # to restart the services
+  systemctl stop coolblock-panel.service  # to stop the services
   ```
 
-- Stopping the services
+- Credentials
 
   ```bash
-  # as coolblock user
-  cd ~/panel
-  docker compose down
-  ```
-
-- Looking up credentials
-
-  ```bash
-  # as coolblock user
-  cd ~/panel
-  cat .env
+  cat /home/coolblock/panel/.env
   ```
 
 - Connecting to relational database
@@ -66,9 +56,15 @@
   mysqldump --defaults-file=~/.my.cnf --databases coolblock-panel > adhoc-coolblock-panel_$(date +%Y%m%d_%H%M%S).sql
   ```
 
-- Connecting to time-series database
+- Connecting to Panel (remotely)
 
-  Open your browser and navigate to [https://panel-pc:8086](https://panel-pc:8086).
+  > You will be prompted with username and password instead of PIN.
+
+  Open your browser and navigate to [https://panel-pc-ip-or-fqdn](https://panel-pc-ip-or-fqdn).
+
+- Connecting to time-series database (remotely)
+
+  Open your browser and navigate to [https://panel-pc-ip-or-fqdn:8086](https://panel-pc-ip-or-fqdn:8086).
 
 ## Monitoring
 
