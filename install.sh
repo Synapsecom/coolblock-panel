@@ -372,12 +372,12 @@ function install_gui() {
 
 
     echo -e "${c_prpl}>> Setting branding wallpaper ..${c_rst}"
-    /usr/bin/sudo -u coolblock /usr/bin/gsettings set org.gnome.desktop.background picture-uri "https://downloads.coolblock.com/panel/wallpaper.png"
+    /usr/bin/sudo -u coolblock /usr/bin/gsettings set org.gnome.desktop.background picture-uri "https://downloads.coolblock.com/panel/wallpaper.jpg"
     echo -ne "${c_ylw} org.gnome.desktop.background picture-uri: "
     /usr/bin/sudo -u coolblock /usr/bin/gsettings get org.gnome.desktop.background picture-uri
     echo -ne "${c_rst}"
 
-    /usr/bin/sudo -u coolblock /usr/bin/gsettings set org.gnome.desktop.background picture-uri-dark "https://downloads.coolblock.com/panel/wallpaper.png"
+    /usr/bin/sudo -u coolblock /usr/bin/gsettings set org.gnome.desktop.background picture-uri-dark "https://downloads.coolblock.com/panel/wallpaper.jpg"
     echo -ne "${c_ylw} org.gnome.desktop.background picture-uri-dark: "
     /usr/bin/sudo -u coolblock /usr/bin/gsettings get org.gnome.desktop.background picture-uri-dark
     echo -ne "${c_rst}"
