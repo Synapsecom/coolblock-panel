@@ -174,10 +174,10 @@ function _download() {
         fi
         echo -e "${c_red}>> ERROR: Downloaded file is empty or missing: '${output_file}'.${c_rst}" 2>/dev/null
         return 1
-    elif [[ "$http_status" -eq 404 ]]; then
+    elif [[ "${http_status}" -eq 404 ]]; then
         echo -e "${c_red}>> ERROR: File not found (HTTP 404) at '${url}'.${c_rst}" 2>/dev/null
         return 1
-    elif [[ "$http_status" -ge 400 ]]; then
+    elif [[ "${http_status}" -ge 400 ]]; then
         echo -e "${c_red}>> ERROR: HTTP request of '${url}' failed with status code '${http_status}'.${c_rst}" 2>/dev/null
         return 1
     else
@@ -630,7 +630,7 @@ function set_crons() {
         echo "# Coolblock Panel - Scheduled Tasks"
         echo "### DO NOT EDIT ###"
         echo "*/5 * * * * /bin/bash ${pdir}/housekeeping.sh --"
-    } >> /etc/cron.d/coolblock
+    } > /etc/cron.d/coolblock
 
     return 0
 }
@@ -638,6 +638,11 @@ function set_crons() {
 function debloat() {
     echo -e "${c_prpl}>> Disabling unnecessary services ..${c_rst}"
     /usr/bin/systemctl disable wpa_supplicant.service
+    /usr/bin/systemctl mask wpa_supplicant.service
+    /usr/bin/systemctl disable avahi-daemon.service
+    /usr/bin/systemctl mask avahi-daemon.socket
+    /usr/bin/systemctl disable --global pipewire
+    /usr/bin/systemctl disable --global wireplumber
 
     echo -e "${c_prpl}>> Blacklisting unnecessary kernel modules ..${c_rst}"
     {
@@ -647,6 +652,19 @@ function debloat() {
         echo "blacklist rtl8188ee"
         echo "blacklist mac80211"
         echo "blacklist cfg80211"
+        echo "blacklist soundcore"
+        echo "blacklist snd"
+        echo "blacklist snd_pcm"
+        echo "blacklist snd_pcsp"
+        echo "blacklist snd_hda_codec_hdmi"
+        echo "blacklist snd_hda_codec_realtek"
+        echo "blacklist snd_hda_codec_generic"
+        echo "blacklist snd_hda_intel"
+        echo "blacklist snd_hda_codec"
+        echo "blacklist snd_hda_core"
+        echo "blacklist snd_hwdep"
+        echo "blacklist snd_timer"
+        echo "blacklist pcspkr"
     } > /etc/modprobe.d/coolblock-blacklist.conf
 
     return 0

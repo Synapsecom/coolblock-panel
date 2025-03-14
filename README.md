@@ -35,12 +35,6 @@
   sudo systemctl stop coolblock-panel.service  # to stop the services
   ```
 
-- Credentials
-
-  ```bash
-  cat /home/coolblock/panel/.env
-  ```
-
 - Connecting to relational database
 
   ```bash
@@ -63,6 +57,8 @@
   Open your browser and navigate to [https://panel-pc-ip-or-fqdn](https://panel-pc-ip-or-fqdn).
 
 - Connecting to time-series database (remotely)
+
+  > Login with username `coolblock` and the random generated password which can be found at `DOCKER_INFLUXDB_INIT_PASSWORD` variable in `/home/coolblock/panel/.env` file.
 
   Open your browser and navigate to [https://panel-pc-ip-or-fqdn:8086](https://panel-pc-ip-or-fqdn:8086).
 
