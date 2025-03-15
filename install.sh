@@ -1,7 +1,6 @@
 #! /usr/bin/env bash
 # Author: Sotirios Roussis <s.roussis@synapsecom.gr>
 
-# set -e
 export DEBIAN_FRONTEND="noninteractive"
 
 declare -r sdir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
@@ -25,9 +24,6 @@ declare -A docker_tags=(
     ["api"]="latest"
     ["proxy"]="latest"
 )
-declare -r browser_docker_check_cmd="/usr/bin/docker compose -f ${pdir}/docker-compose.yml ps | /usr/bin/grep -i frontend | /usr/bin/grep -vi database | /usr/bin/grep \"(healthy)\""
-declare -r browser_certs_cmd="/usr/bin/sudo /usr/bin/cp -pv ${pdir}/certs/localhost.crt /usr/local/share/ca-certificates/ && /usr/bin/sudo /usr/sbin/update-ca-certificates"
-declare -r browser_cmd="/usr/bin/firefox --kiosk --new-window --no-remote --disable-features=TranslateUI --disable-sync --disable-crash-reporter --disable-pinch --disable-session-crashed-bubble --safe-mode --url https://localhost"
 
 # overriden by args
 declare tank_model=""
@@ -121,7 +117,6 @@ function check_arguments() {
 
 function check_os() {
 
-    # Ensure OS-release file exists
     if [ -f "/etc/os-release" ]; then
         source /etc/os-release
     else
@@ -129,7 +124,6 @@ function check_os() {
         return 200
     fi
 
-    # Check if OS is supported
     if [[ "${ID}" != "ubuntu" || "${VERSION_ID}" != "24.04" ]]; then
         echo -e "${c_red}>> ERROR: This script supports only Ubuntu 24.04 LTS.${c_rst}" 2>/dev/null
         echo -e "${c_red}>> Detected OS: ${ID} ${VERSION_ID}${c_rst}" 2>/dev/null
@@ -141,7 +135,7 @@ function check_os() {
 }
 
 function is_root() {
-    # Check if running user is root
+
     if [[ "${EUID}" -ne 0 ]]; then
         echo -e "${c_red}>> ERROR: This script must be run as root.${c_rst}" 2>/dev/null
         return 40
@@ -222,6 +216,7 @@ function create_user() {
 }
 
 function install_prerequisites() {
+
     echo -e "${c_cyan}>> Updating package manager's cache ..${c_rst}"
     /usr/bin/apt update
 
@@ -242,6 +237,7 @@ function install_prerequisites() {
 }
 
 function install_docker() {
+
     echo -e "${c_cyan}>> Installing Docker (if not installed already) ..${c_rst}"
     if ! hash docker &>/dev/null; then
         /usr/bin/install -m 0755 -d /etc/apt/keyrings
@@ -273,10 +269,11 @@ function install_docker() {
 
 function install_gui() {
 
-    # declare -r user_id=$(/usr/bin/id -u coolblock)
+    declare -r user_id=$(/usr/bin/id -u coolblock)
 
-    # export XDG_RUNTIME_DIR="/run/user/${user_id}"
-    # export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/${RUSER_UID}/bus"
+    export DISPLAY=":0"
+    export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/${user_id}/bus"
+    export XDG_RUNTIME_DIR="/run/user/${user_id}"
 
     echo -e "${c_cyan}>> Installing Gnome (if not installed already) ..${c_rst}"
     /usr/bin/apt update
@@ -299,98 +296,25 @@ function install_gui() {
         echo "Enable=false"
     } > /etc/gdm3/custom.conf
 
-    echo -e "${c_prpl}>> Disabling screen blanking, power saving and suspend ..${c_rst}"
-    /usr/bin/sudo -u coolblock /usr/bin/gsettings set org.gnome.desktop.session idle-delay 0
-    echo -ne "${c_ylw} org.gnome.desktop.session idle-delay: "
-    /usr/bin/sudo -u coolblock /usr/bin/gsettings get org.gnome.desktop.session idle-delay
-    echo -ne "${c_rst}"
-
-    /usr/bin/sudo -u coolblock /usr/bin/gsettings set org.gnome.desktop.screensaver lock-enabled false
-    echo -ne "${c_ylw} org.gnome.desktop.screensaver lock-enabled: "
-    /usr/bin/sudo -u coolblock /usr/bin/gsettings get org.gnome.desktop.screensaver lock-enabled
-    echo -ne "${c_rst}"
-
-    /usr/bin/sudo -u coolblock /usr/bin/gsettings set org.gnome.desktop.lockdown disable-lock-screen true
-    echo -ne "${c_ylw} org.gnome.desktop.lockdown disable-lock-screen: "
-    /usr/bin/sudo -u coolblock /usr/bin/gsettings get org.gnome.desktop.lockdown disable-lock-screen
-    echo -ne "${c_rst}"
-
-    /usr/bin/sudo -u coolblock /usr/bin/gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type 'nothing'
-    echo -ne "${c_ylw} org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type: "
-    /usr/bin/sudo -u coolblock /usr/bin/gsettings get org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type
-    echo -ne "${c_rst}"
-
-    /usr/bin/sudo -u coolblock /usr/bin/gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-battery-type 'nothing'
-    echo -ne "${c_ylw} org.gnome.settings-daemon.plugins.power sleep-inactive-battery-type: "
-    /usr/bin/sudo -u coolblock /usr/bin/gsettings get org.gnome.settings-daemon.plugins.power sleep-inactive-battery-type
-    echo -ne "${c_rst}"
-
-
-    echo -e "${c_prpl}>> Disabling multiple workspaces and enforcing to 1 ..${c_rst}"
-    /usr/bin/sudo -u coolblock /usr/bin/gsettings set org.gnome.mutter dynamic-workspaces false
-    echo -ne "${c_ylw} org.gnome.mutter dynamic-workspaces: "
-    /usr/bin/sudo -u coolblock /usr/bin/gsettings get org.gnome.mutter dynamic-workspaces
-    echo -ne "${c_rst}"
-
-    /usr/bin/sudo -u coolblock /usr/bin/gsettings set org.gnome.desktop.wm.preferences num-workspaces 1
-    echo -ne "${c_ylw} org.gnome.desktop.wm.preferences num-workspaces: "
-    /usr/bin/sudo -u coolblock /usr/bin/gsettings get org.gnome.desktop.wm.preferences num-workspaces
-    echo -ne "${c_rst}"
-
-
-    echo -e "${c_prpl}>> Enabling system-wide dark mode ..${c_rst}"
-    /usr/bin/sudo -u coolblock /usr/bin/gsettings set org.gnome.desktop.interface gtk-theme 'Adwaita-dark'
-    echo -ne "${c_ylw} org.gnome.desktop.interface gtk-theme: "
-    /usr/bin/sudo -u coolblock /usr/bin/gsettings get org.gnome.desktop.interface gtk-theme
-    echo -ne "${c_rst}"
-
-    /usr/bin/sudo -u coolblock /usr/bin/gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
-    echo -ne "${c_ylw} org.gnome.desktop.interface color-scheme: "
-    /usr/bin/sudo -u coolblock /usr/bin/gsettings get org.gnome.desktop.interface color-scheme
-    echo -ne "${c_rst}"
-
-
-    echo -e "${c_prpl}>> Configuring screen keyboard ..${c_rst}"
-    /usr/bin/sudo -u coolblock /usr/bin/gsettings set org.gnome.desktop.a11y.applications screen-keyboard-enabled true
-    echo -ne "${c_ylw} org.gnome.desktop.a11y.applications screen-keyboard-enabled: "
-    /usr/bin/sudo -u coolblock /usr/bin/gsettings get org.gnome.desktop.a11y.applications screen-keyboard-enabled
-    echo -ne "${c_rst}"
-
-
-    echo -e "${c_prpl}>> Disabling screen reader ..${c_rst}"
-    /usr/bin/sudo -u coolblock /usr/bin/gsettings set org.gnome.desktop.a11y.applications screen-reader-enabled false
-    echo -ne "${c_ylw} org.gnome.desktop.a11y.applications screen-reader-enabled: "
-    /usr/bin/sudo -u coolblock /usr/bin/gsettings get org.gnome.desktop.a11y.applications screen-reader-enabled
-    echo -ne "${c_rst}"
-
-
-    echo -e "${c_prpl}>> Disabling screen magnifier ..${c_rst}"
-    /usr/bin/sudo -u coolblock /usr/bin/gsettings set org.gnome.desktop.a11y.applications screen-magnifier-enabled false
-    echo -ne "${c_ylw} org.gnome.desktop.a11y.applications screen-magnifier-enabled: "
-    /usr/bin/sudo -u coolblock /usr/bin/gsettings get org.gnome.desktop.a11y.applications screen-magnifier-enabled
-    echo -ne "${c_rst}"
-
-
-    echo -e "${c_prpl}>> Setting branding wallpaper ..${c_rst}"
-    /usr/bin/sudo -u coolblock /usr/bin/gsettings set org.gnome.desktop.background picture-uri https://downloads.coolblock.com/panel/wallpaper.jpg
-    echo -ne "${c_ylw} org.gnome.desktop.background picture-uri: "
-    /usr/bin/sudo -u coolblock /usr/bin/gsettings get org.gnome.desktop.background picture-uri
-    echo -ne "${c_rst}"
-
-    /usr/bin/sudo -u coolblock /usr/bin/gsettings set org.gnome.desktop.background picture-uri-dark https://downloads.coolblock.com/panel/wallpaper.jpg
-    echo -ne "${c_ylw} org.gnome.desktop.background picture-uri-dark: "
-    /usr/bin/sudo -u coolblock /usr/bin/gsettings get org.gnome.desktop.background picture-uri-dark
-    echo -ne "${c_rst}"
+    /usr/bin/sudo -E -u coolblock /usr/bin/gsettings set org.gnome.desktop.session idle-delay 0
+    /usr/bin/sudo -E -u coolblock /usr/bin/gsettings set org.gnome.desktop.screensaver lock-enabled false
+    /usr/bin/sudo -E -u coolblock /usr/bin/gsettings set org.gnome.desktop.lockdown disable-lock-screen true
+    /usr/bin/sudo -E -u coolblock /usr/bin/gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type 'nothing'
+    /usr/bin/sudo -E -u coolblock /usr/bin/gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-battery-type 'nothing'
+    /usr/bin/sudo -E -u coolblock /usr/bin/gsettings set org.gnome.mutter dynamic-workspaces false
+    /usr/bin/sudo -E -u coolblock /usr/bin/gsettings set org.gnome.desktop.wm.preferences num-workspaces 1
+    /usr/bin/sudo -E -u coolblock /usr/bin/gsettings set org.gnome.desktop.interface gtk-theme 'Adwaita-dark'
+    /usr/bin/sudo -E -u coolblock /usr/bin/gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
+    /usr/bin/sudo -E -u coolblock /usr/bin/gsettings set org.gnome.desktop.a11y.applications screen-keyboard-enabled true
+    /usr/bin/sudo -E -u coolblock /usr/bin/gsettings set org.gnome.desktop.a11y.applications screen-reader-enabled false
+    /usr/bin/sudo -E -u coolblock /usr/bin/gsettings set org.gnome.desktop.a11y.applications screen-magnifier-enabled false
+    /usr/bin/sudo -E -u coolblock /usr/bin/gsettings set org.gnome.desktop.background picture-uri https://downloads.coolblock.com/panel/wallpaper.jpg
+    /usr/bin/sudo -E -u coolblock /usr/bin/gsettings set org.gnome.desktop.background picture-uri-dark https://downloads.coolblock.com/panel/wallpaper.jpg
 
     return 0
 }
 
 function install_browser() {
-
-    # declare -r user_id=$(/usr/bin/id -u coolblock)
-
-    # export XDG_RUNTIME_DIR="/run/user/${user_id}"
-    # export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/${RUSER_UID}/bus"
 
     echo -e "${c_cyan}>> Installing Mozilla signing key ..${c_rst}"
     /usr/bin/wget -q https://packages.mozilla.org/apt/repo-signing-key.gpg -O- \
@@ -422,6 +346,13 @@ function install_browser() {
     /usr/bin/apt update
     /usr/bin/apt install -y firefox
 
+    echo -e "${c_cyan}>> Downloading browser script ..${c_rst}"
+    download "https://downloads.coolblock.com/panel/browser.sh" "${pdir}/browser.sh" coolblock
+    if [ "${?}" -ne 0 ]; then
+        return 169
+    fi
+    /usr/bin/chmod -v 0750 "${pdir}/browser.sh"
+
     echo -e "${c_prpl}>> Creating Systemd service for Mozilla Firefox in kiosk mode ..${c_rst}"
     {
         echo "[Unit]"
@@ -430,13 +361,17 @@ function install_browser() {
         echo "After=coolblock-panel.service graphical.target"
         echo ""
         echo "[Service]"
+        echo "Type=simple"
         echo "User=coolblock"
         echo "Group=coolblock"
-        echo "ExecStart=/bin/bash -c 'while : ; do /usr/bin/pgrep firefox >/dev/null || { ${browser_docker_check_cmd} && ${browser_certs_cmd} && ${browser_cmd} ; } ; /usr/bin/sleep 5; done'"
-        echo "Restart=no"
+        echo "ExecStart=/home/coolblock/panel/browser.sh"
+        echo "Restart=always"
+        echo "RestartSec=5"
+        echo "Environment=DISPLAY=:0"
+        echo "Environment=XAUTHORITY=/home/coolblock/.Xauthority"
         echo ""
         echo "[Install]"
-        echo "WantedBy=default.target"
+        echo "WantedBy=multi-user.target"
     } > /etc/systemd/system/coolblock-browser.service
     # fixes "is marked world-inaccessible" systemd log spam
     /usr/bin/chmod 0644 /etc/systemd/system/coolblock-browser.service
@@ -499,11 +434,6 @@ function install_browser() {
 }
 
 function install_panel() {
-
-    # declare -r user_id=$(/usr/bin/id -u coolblock)
-
-    # export XDG_RUNTIME_DIR="/run/user/${user_id}"
-    # export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/${RUSER_UID}/bus"
 
     declare mysql_backup_file=""
     declare mysql_users_backup_file=""
@@ -692,6 +622,7 @@ function install_panel() {
 }
 
 function configure_sysctl() {
+
     echo -e "${c_cyan}>> Disabling Magic SysRq ..${c_rst}"
     {
         echo "# Coolblock Panel - Magic SysRq"
@@ -712,6 +643,7 @@ function configure_sysctl() {
 }
 
 function configure_network() {
+
     echo -e "${c_cyan}>> Configuring network ..${c_rst}"
     if [ "${CONFIGURE_NETWORK:-yes}" == "yes" ]; then
         /usr/bin/rm -fv /etc/netplan/*
@@ -742,8 +674,12 @@ function configure_network() {
 }
 
 function configure_crons() {
+
     echo -e "${c_cyan}>> Downloading housekeeping script ..${c_rst}"
     download "https://downloads.coolblock.com/panel/housekeeping.sh" "${pdir}/housekeeping.sh" coolblock
+    if [ "${?}" -ne 0 ]; then
+        return 156
+    fi
 
     echo -e "${c_prpl}>> Setting up scheduled tasks ..${c_rst}"
     declare -r cron_housekeeping_file=$(/usr/bin/mktemp)
@@ -759,6 +695,7 @@ function configure_crons() {
 }
 
 function debloat() {
+
     echo -e "${c_prpl}>> Disabling unnecessary services ..${c_rst}"
     /usr/bin/systemctl disable wpa_supplicant.service
     /usr/bin/systemctl mask wpa_supplicant.service
@@ -794,6 +731,7 @@ function debloat() {
 }
 
 function cleanup() {
+
     echo -e "${c_prpl}>> Cleaning up package manager ..${c_rst}"
     /usr/bin/apt autoremove -y
     /usr/bin/apt clean all
