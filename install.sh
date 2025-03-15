@@ -602,7 +602,10 @@ function install_panel() {
     echo -e "${c_prpl}>> Initializing database (if applicable) ..${c_rst}"
     if ! /usr/bin/docker volume ls | /usr/bin/grep panel_coolblock-panel-web-database-data; then
         /usr/bin/sudo -u coolblock /usr/bin/docker compose -f "${pdir}/docker-compose.yml" up -d mysql
-        /usr/bin/sleep 10
+        while ! /usr/bin/docker ps | /usr/bin/grep "(healthy)"; do
+            echo -e "${c_ylw}>> Waiting for database to become healthy .."
+            /usr/bin/sleep 1
+        done
     fi
 
     echo -e "${c_prpl}>> Creating Systemd service for Coolblock Panel Core ..${c_rst}"
