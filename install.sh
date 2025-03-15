@@ -530,8 +530,8 @@ function install_panel() {
 
     echo -e "${c_prpl}>> Stopping services (if running) ..${c_rst}"
     if [ -f "${pdir}/docker-compose.yml" ]; then
-        /usr/bin/systemctl stop coolblock-panel.service \
-            || /usr/bin/docker compose -f "${pdir}/docker-compose.yml" down
+        /usr/bin/systemctl stop coolblock-panel.service
+        /usr/bin/docker compose -f "${pdir}/docker-compose.yml" down
     fi
 
     echo -e "${c_prpl}>> Generating certificates (if not already) ..${c_rst}"
@@ -566,8 +566,8 @@ function install_panel() {
 
     echo -e "${c_prpl}>> Stopping services (if running) ..${c_rst}"
     if [ -f "${pdir}/docker-compose.yml" ]; then
-        /usr/bin/systemctl stop coolblock-panel.service \
-            || /usr/bin/docker compose -f "${pdir}/docker-compose.yml" down
+        /usr/bin/systemctl stop coolblock-panel.service
+        /usr/bin/docker compose -f "${pdir}/docker-compose.yml" down
     fi
 
     echo -e "${c_prpl}>> Downloading Docker deployment file ..${c_rst}"
@@ -657,8 +657,8 @@ function install_panel() {
         done
 
         /usr/bin/sudo -u coolblock /usr/bin/mysql --defaults-file=/home/coolblock/.my.cnf coolblock-panel < "${pdir}/backup/coolblock-panel_users.sql"
-        /usr/bin/systemctl stop coolblock-panel.service \
-            || /usr/bin/docker compose -f "${pdir}/docker-compose.yml" down
+        /usr/bin/systemctl stop coolblock-panel.service
+        /usr/bin/docker compose -f "${pdir}/docker-compose.yml" down
     fi
 
     echo -e "${c_prpl}>> Creating Systemd service for Coolblock Panel Core ..${c_rst}"
