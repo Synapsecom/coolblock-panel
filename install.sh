@@ -273,10 +273,10 @@ function install_docker() {
 
 function install_gui() {
 
-    declare -r user_id=$(/usr/bin/id -u coolblock)
+    # declare -r user_id=$(/usr/bin/id -u coolblock)
 
-    export XDG_RUNTIME_DIR="/run/user/${user_id}"
-    export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/${RUSER_UID}/bus"
+    # export XDG_RUNTIME_DIR="/run/user/${user_id}"
+    # export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/${RUSER_UID}/bus"
 
     echo -e "${c_cyan}>> Installing Gnome (if not installed already) ..${c_rst}"
     /usr/bin/apt update
@@ -372,12 +372,12 @@ function install_gui() {
 
 
     echo -e "${c_prpl}>> Setting branding wallpaper ..${c_rst}"
-    /usr/bin/sudo -u coolblock /usr/bin/gsettings set org.gnome.desktop.background picture-uri "https://downloads.coolblock.com/panel/wallpaper.jpg"
+    /usr/bin/sudo -u coolblock /usr/bin/gsettings set org.gnome.desktop.background picture-uri https://downloads.coolblock.com/panel/wallpaper.jpg
     echo -ne "${c_ylw} org.gnome.desktop.background picture-uri: "
     /usr/bin/sudo -u coolblock /usr/bin/gsettings get org.gnome.desktop.background picture-uri
     echo -ne "${c_rst}"
 
-    /usr/bin/sudo -u coolblock /usr/bin/gsettings set org.gnome.desktop.background picture-uri-dark "https://downloads.coolblock.com/panel/wallpaper.jpg"
+    /usr/bin/sudo -u coolblock /usr/bin/gsettings set org.gnome.desktop.background picture-uri-dark https://downloads.coolblock.com/panel/wallpaper.jpg
     echo -ne "${c_ylw} org.gnome.desktop.background picture-uri-dark: "
     /usr/bin/sudo -u coolblock /usr/bin/gsettings get org.gnome.desktop.background picture-uri-dark
     echo -ne "${c_rst}"
@@ -387,10 +387,10 @@ function install_gui() {
 
 function install_browser() {
 
-    declare -r user_id=$(/usr/bin/id -u coolblock)
+    # declare -r user_id=$(/usr/bin/id -u coolblock)
 
-    export XDG_RUNTIME_DIR="/run/user/${user_id}"
-    export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/${RUSER_UID}/bus"
+    # export XDG_RUNTIME_DIR="/run/user/${user_id}"
+    # export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/${RUSER_UID}/bus"
 
     echo -e "${c_cyan}>> Installing Mozilla signing key ..${c_rst}"
     /usr/bin/wget -q https://packages.mozilla.org/apt/repo-signing-key.gpg -O- \
@@ -500,10 +500,10 @@ function install_browser() {
 
 function install_panel() {
 
-    declare -r user_id=$(/usr/bin/id -u coolblock)
+    # declare -r user_id=$(/usr/bin/id -u coolblock)
 
-    export XDG_RUNTIME_DIR="/run/user/${user_id}"
-    export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/${RUSER_UID}/bus"
+    # export XDG_RUNTIME_DIR="/run/user/${user_id}"
+    # export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/${RUSER_UID}/bus"
 
     declare mysql_backup_file=""
     declare mysql_users_backup_file=""
