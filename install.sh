@@ -584,6 +584,7 @@ function install_panel() {
 
     echo -e "${c_prpl}>> Patching mysql database and restoring users (if applicable) ..${c_rst}"
     if [[ -f "${pdir}/backup/coolblock-panel.sql" && -f "${pdir}/backup/coolblock-panel_users.sql" ]]; then
+        /usr/bin/docker compose -f "${pdir}/docker-compose.yml" down mysql
         /usr/bin/docker volume rm panel_coolblock-panel-web-database-data
         /usr/bin/sudo -u coolblock /usr/bin/docker compose -f "${pdir}/docker-compose.yml" up -d mysql
         echo -e "${c_ylw}>> Waiting for mysql database ..${c_rst}"
@@ -596,6 +597,12 @@ function install_panel() {
         /usr/bin/sudo -u coolblock /usr/bin/mysql --defaults-file=/home/coolblock/.my.cnf coolblock-panel < "${pdir}/backup/coolblock-panel_users.sql"
         /usr/bin/systemctl stop coolblock-panel.service
         /usr/bin/docker compose -f "${pdir}/docker-compose.yml" down
+    fi
+
+    echo -e "${c_prpl}>> Initializing database (if applicable) ..${c_rst}"
+    if ! /usr/bin/docker volume ls | /usr/bin/grep panel_coolblock-panel-web-database-data; then
+        /usr/bin/sudo -u coolblock /usr/bin/docker compose -f "${pdir}/docker-compose.yml" up -d mysql
+        /usr/bin/sleep 10
     fi
 
     echo -e "${c_prpl}>> Creating Systemd service for Coolblock Panel Core ..${c_rst}"
