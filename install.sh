@@ -528,6 +528,12 @@ function install_panel() {
     echo -e "${c_prpl}>> Preparing project structure '${pdir}' ..${c_rst}"
     /usr/bin/sudo -u coolblock /usr/bin/mkdir -pv "${pdir}/backup" "${pdir}/certs"
 
+    echo -e "${c_prpl}>> Stopping services (if running) ..${c_rst}"
+    if [ -f "${pdir}/docker-compose.yml" ]; then
+        /usr/bin/systemctl stop coolblock-panel.service \
+            || /usr/bin/docker compose -f "${pdir}/docker-compose.yml" down
+    fi
+
     echo -e "${c_prpl}>> Generating certificates (if not already) ..${c_rst}"
     if [ -f "${pdir}/docker-compose.yml" ]; then
         /usr/bin/sudo -u coolblock /usr/bin/docker compose -f "${pdir}/docker-compose.yml" pull proxy
