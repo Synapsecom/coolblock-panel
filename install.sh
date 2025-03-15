@@ -360,28 +360,15 @@ function install_browser() {
     fi
     /usr/bin/chmod -v 0750 "${pdir}/browser.sh"
 
-    echo -e "${c_prpl}>> Creating Systemd service for Mozilla Firefox in kiosk mode ..${c_rst}"
+    /usr/bin/mkdir -pv /home/coolblock/.config/autostart
+    echo -e "${c_prpl}>> Creating Gnome autostart entry for Mozilla Firefox in kiosk mode ..${c_rst}"
     {
-        echo "[Unit]"
-        echo "Description=Coolblock Browser - Mozilla Firefox Service"
-        echo "Requires=coolblock-panel.service"
-        echo "After=coolblock-panel.service graphical.target"
-        echo ""
-        echo "[Service]"
-        echo "Type=simple"
-        echo "User=coolblock"
-        echo "Group=coolblock"
-        echo "ExecStart=/home/coolblock/panel/browser.sh"
-        echo "Restart=always"
-        echo "RestartSec=5"
-        echo "Environment=DISPLAY=:0"
-        echo "Environment=XAUTHORITY=/home/coolblock/.Xauthority"
-        echo ""
-        echo "[Install]"
-        echo "WantedBy=multi-user.target"
-    } > /etc/systemd/system/coolblock-browser.service
-    # fixes "is marked world-inaccessible" systemd log spam
-    /usr/bin/chmod 0644 /etc/systemd/system/coolblock-browser.service
+        echo "[Desktop Entry]"
+        echo "Type=Application"
+        echo "Name=Coolblock Browser - Mozilla Firefox"
+        echo "Exec=/home/coolblock/panel/browser.sh"
+        echo "X-GNOME-Autostart-enabled=true"
+    } > /home/coolblock/.config/autostart/coolblock-browser.desktop
 
     echo -e "${c_prpl}>> Creating Mozilla Firefox policies (based on https://github.com/mozilla/policy-templates/blob/master/linux/policies.json) ..${c_rst}"
     /usr/bin/mkdir -pv /etc/firefox/policies
@@ -432,10 +419,6 @@ function install_browser() {
         echo '    }'
         echo '}'
     } > /etc/firefox/policies/policies.json
-
-    echo -e "${c_prpl}>> Enabling Mozilla Firefox service to start on boot ..${c_rst}"
-    /usr/bin/systemctl daemon-reload
-    /usr/bin/systemctl enable coolblock-browser.service
 
     return 0
 }
