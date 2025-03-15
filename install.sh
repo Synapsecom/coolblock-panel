@@ -144,6 +144,13 @@ function is_root() {
     return 0
 }
 
+function generate_password() {
+
+  declare -r length="${1:-12}"
+  /usr/bin/tr -dc 'a-zA-Z0-9.,@_+\-' < /dev/urandom | /usr/bin/head -c "${length}"
+  echo
+}
+
 function download() {
 
     declare -r url="${1}"
@@ -532,11 +539,11 @@ function install_panel() {
         influxdb_password=$(/usr/bin/awk -F= '/^DOCKER_INFLUXDB_INIT_PASSWORD/{print $2}' <<< "${old_env}" | /usr/bin/tr -d "'\n")
         influxdb_token=$(/usr/bin/awk -F= '/^DOCKER_INFLUXDB_INIT_ADMIN_TOKEN/{print $2}' <<< "${old_env}" | /usr/bin/tr -d "'\n")
     else
-        jwt_secret=$(/usr/bin/openssl rand -base64 128 | /usr/bin/tr -d '\n')
-        mysql_password=$(/usr/bin/openssl rand -base64 16 | /usr/bin/tr -d '\n')
-        mysql_root_password=$(/usr/bin/openssl rand -base64 16 | /usr/bin/tr -d '\n')
-        influxdb_password=$(/usr/bin/openssl rand -base64 16 | /usr/bin/tr -d '\n')
-        influxdb_token=$(/usr/bin/openssl rand -base64 32 | /usr/bin/tr -d '\n')
+        jwt_secret=$(generate_password 128 | /usr/bin/tr -d '\n')
+        mysql_password=$(generate_password 16 | /usr/bin/tr -d '\n')
+        mysql_root_password=$(generate_password 16 | /usr/bin/tr -d '\n')
+        influxdb_password=$(generate_password 16 | /usr/bin/tr -d '\n')
+        influxdb_token=$(generate_password 32 | /usr/bin/tr -d '\n')
     fi
 
     echo -e "${c_prpl}>> Downloading environment file ..${c_rst}"
