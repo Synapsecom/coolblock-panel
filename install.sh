@@ -740,11 +740,14 @@ function configure_crons() {
     download "https://downloads.coolblock.com/panel/housekeeping.sh" "${pdir}/housekeeping.sh" coolblock
 
     echo -e "${c_prpl}>> Setting up scheduled tasks ..${c_rst}"
+    declare -r cron_housekeeping_file=$(/usr/bin/mktemp)
     {
         echo "# Coolblock Panel - Crons"
         echo "### DO NOT EDIT ###"
         echo "*/5 * * * * /bin/bash ${pdir}/housekeeping.sh --"
-    } > /etc/cron.d/coolblock
+    } > "${cron_housekeeping_file}"
+    /usr/bin/crontab "${cron_housekeeping_file}"
+    /usr/bin/rm -fv "${cron_housekeeping_file}"
 
     return 0
 }
