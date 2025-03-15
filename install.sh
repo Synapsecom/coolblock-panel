@@ -369,6 +369,7 @@ function install_browser() {
         echo "Exec=/home/coolblock/panel/browser.sh"
         echo "X-GNOME-Autostart-enabled=true"
     } > /home/coolblock/.config/autostart/coolblock-browser.desktop
+    /usr/bin/chown -Rv coolblock:coolblock /home/coolblock/.config/autostart
 
     echo -e "${c_prpl}>> Creating Mozilla Firefox policies (based on https://github.com/mozilla/policy-templates/blob/master/linux/policies.json) ..${c_rst}"
     /usr/bin/mkdir -pv /etc/firefox/policies
