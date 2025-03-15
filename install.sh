@@ -427,7 +427,7 @@ function install_browser() {
         echo '            "Locked": true'
         echo '        },'
         echo '        "Certificates": {'
-        echo '            "Install": ["/home/coolblock/panel/certs/ca.crt"]'
+        echo '            "Install": ["/home/coolblock/panel/certs/localhost.ca.crt"]'
         echo '        }'
         echo '    }'
         echo '}'
