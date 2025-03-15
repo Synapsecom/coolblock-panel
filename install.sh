@@ -222,7 +222,7 @@ function create_user() {
 }
 
 function install_prerequisites() {
-        echo -e "${c_cyan}>> Updating package manager's cache ..${c_rst}"
+    echo -e "${c_cyan}>> Updating package manager's cache ..${c_rst}"
     /usr/bin/apt update
 
     echo -e "${c_cyan}>> Upgrading system (if required) ..${c_rst}"
@@ -255,13 +255,13 @@ function install_docker() {
         /usr/bin/systemctl enable --now docker
     fi
 
-    echo -e ">> ${c_prpl} Creating Docker network (if does not exist) ..${c_rst}"
+    echo -e "${c_prpl}>> Creating Docker network (if does not exist) ..${c_rst}"
     if [ ! $(/usr/bin/docker network ls --filter=name=coolblock-panel --quiet) ]; then
         /usr/bin/docker network create --driver=bridge --subnet=${DOCKER_SUBNET:-172.20.0.0/16} --ip-range=${DOCKER_IP_RANGE:-172.20.0.0/24} --gateway=${DOCKER_GATEWAY:-172.20.0.1} coolblock-panel
         /usr/bin/docker network ls --filter=name=coolblock-panel
     fi
 
-    echo -e ">> ${c_prpl} Configuring Docker daemon ..${c_rst}"
+    echo -e "${c_prpl}>> Configuring Docker daemon ..${c_rst}"
     {
         echo '{'
         echo '    "log-driver": "journald"'
@@ -438,6 +438,8 @@ function install_browser() {
         echo "[Install]"
         echo "WantedBy=default.target"
     } > /etc/systemd/system/coolblock-browser.service
+    # fixes "is marked world-inaccessible" systemd log spam
+    /usr/bin/chmod 0644 /etc/systemd/system/coolblock-browser.service
 
     echo -e "${c_prpl}>> Creating Mozilla Firefox policies (based on https://github.com/mozilla/policy-templates/blob/master/linux/policies.json) ..${c_rst}"
     /usr/bin/mkdir -pv /etc/firefox/policies
@@ -528,6 +530,7 @@ function install_panel() {
 
     echo -e "${c_prpl}>> Generating certificates (if not already) ..${c_rst}"
     if [ -f "${pdir}/docker-compose.yml" ]; then
+        /usr/bin/sudo -u coolblock /usr/bin/docker compose -f "${pdir}/docker-compose.yml" pull proxy
         /usr/bin/sudo -u coolblock /usr/bin/docker compose -f "${pdir}/docker-compose.yml" up -d proxy
         /usr/bin/timeout 5 /usr/bin/docker compose -f "${pdir}/docker-compose.yml" logs -f proxy || /usr/bin/true
         /usr/bin/docker compose -f "${pdir}/docker-compose.yml" down proxy
@@ -535,6 +538,7 @@ function install_panel() {
 
     echo -e "${c_prpl}>> Backing up mysql database (if available) ..${c_rst}"
     if [[ -f "/home/coolblock/.my.cnf" && -f "${pdir}/docker-compose.yml" ]]; then
+        /usr/bin/sudo -u coolblock /usr/bin/docker compose -f "${pdir}/docker-compose.yml" pull mysql
         /usr/bin/sudo -u coolblock /usr/bin/docker compose -f "${pdir}/docker-compose.yml" up -d mysql
         echo -e "${c_ylw}>> Waiting for mysql database ..${c_rst}"
         while :; do
@@ -664,8 +668,6 @@ function install_panel() {
         # echo "RemainAfterExit=true"
         echo "WorkingDirectory=${pdir}"
         # echo "ExecStart=/bin/bash -c 'docker compose up -d --remove-orphans'"
-        echo "Environment=DISPLAY=:0"
-        echo "Environment=XAUTHORITY=/home/coolblock/.Xauthority"
         echo "ExecStart=/bin/bash -c 'docker compose up --remove-orphans'"
         echo "ExecStop=/bin/bash -c 'docker compose down'"
         echo "Restart=no"
@@ -673,6 +675,8 @@ function install_panel() {
         echo "[Install]"
         echo "WantedBy=multi-user.target"
     } > /etc/systemd/system/coolblock-panel.service
+    # fixes "is marked world-inaccessible" systemd log spam
+    /usr/bin/chmod 0644 /etc/systemd/system/coolblock-panel.service
 
     echo -e "${c_prpl}>> Enabling core services to start on boot ..${c_rst}"
     /usr/bin/systemctl daemon-reload
