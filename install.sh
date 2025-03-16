@@ -296,6 +296,7 @@ function install_gui() {
         echo "[daemon]"
         echo "AutomaticLoginEnable=true"
         echo "AutomaticLogin=coolblock"
+        echo "WaylandEnable=false"
         echo
         echo "[security]"
         echo "DisallowTCP=true"
