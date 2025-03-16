@@ -231,14 +231,15 @@ function install_prerequisites() {
     /usr/bin/apt full-upgrade -y
 
     echo -e "${c_cyan}>> Installing helper packages (if not installed already) ..${c_rst}"
-    apt install -y \
+    /usr/bin/apt install -y \
         sudo cron \
         vim nano \
         iputils-ping net-tools dnsutils tcpdump traceroute \
         git curl wget \
         jq yq \
         ca-certificates openssl gpg \
-        mariadb-client
+        mariadb-client \
+        libcanberra-gtk-module libcanberra-gtk3-module
 
     return 0
 }
@@ -321,7 +322,7 @@ function install_gui() {
     return 0
 }
 
-function install_browser() {
+function install_firefox() {
 
     echo -e "${c_cyan}>> Installing Mozilla signing key ..${c_rst}"
     /usr/bin/wget -q https://packages.mozilla.org/apt/repo-signing-key.gpg -O- \
@@ -366,7 +367,7 @@ function install_browser() {
         echo "[Desktop Entry]"
         echo "Type=Application"
         echo "Name=Coolblock Browser - Mozilla Firefox"
-        echo "Exec=/home/coolblock/panel/browser.sh"
+        echo "Exec=/home/coolblock/panel/browser.sh firefox"
         echo "X-GNOME-Autostart-enabled=true"
     } > /home/coolblock/.config/autostart/coolblock-browser.desktop
     /usr/bin/chown -Rv coolblock:coolblock /home/coolblock/.config/autostart
@@ -420,6 +421,15 @@ function install_browser() {
         echo '    }'
         echo '}'
     } > /etc/firefox/policies/policies.json
+
+    return 0
+}
+
+function install_chromium() {
+
+    echo -e "${c_cyan}>> Installing Chromium (if not installed already) ..${c_rst}"
+    /usr/bin/apt update
+    /usr/bin/apt install -y chromium-browser
 
     return 0
 }
@@ -780,9 +790,13 @@ function main() {
     declare -r install_panel_rc="${?}"
     [ "${install_panel_rc}" -ne 0 ] && return "${install_panel_rc}"
 
-    install_browser
-    declare -r install_browser_rc="${?}"
-    [ "${install_browser_rc}" -ne 0 ] && return "${install_browser_rc}"
+    install_firefox
+    declare -r install_firefox_rc="${?}"
+    [ "${install_firefox_rc}" -ne 0 ] && return "${install_firefox_rc}"
+
+    # install_chromium
+    # declare -r install_chromium_rc="${?}"
+    # [ "${install_chromium_rc}" -ne 0 ] && return "${install_chromium_rc}"
 
     configure_crons
     declare -r configure_crons_rc="${?}"
