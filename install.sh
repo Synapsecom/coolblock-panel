@@ -312,8 +312,6 @@ function install_docker() {
 
 function install_kde() {
 
-    declare -r tmpf_logo=$(mktmp coolblock)
-
     echo -e "${c_cyan}>> Installing KDE (if not installed already) ..${c_rst}"
     /usr/bin/apt update
     /usr/bin/apt install -y kubuntu-desktop xdg-utils qtvirtualkeyboard-plugin maliit-keyboard plasma-wayland-protocols plasma-workspace-wayland plasma-mobile-tweaks
@@ -383,7 +381,7 @@ function install_kde() {
             /home/coolblock/.config/plasma-org.kde.plasma.desktop-appletsrc
     else
         /usr/bin/sudo -u coolblock /usr/bin/sed '/^\[Containments\]\[2\]\[Applets\]\[3\]\[Configuration\]\[General\]$/,/^$/d' \
-            /home/coolblock/.config/plasma-org.kde.plasma.desktop-appletsrc > "${tmpf_logo}"
+            /home/coolblock/.config/plasma-org.kde.plasma.desktop-appletsrc > /home/coolblock/.config/plasma-org.kde.plasma.desktop-appletsrc.new
         {
             echo ''
             echo '[Containments][2][Applets][3][Configuration][General]'
@@ -391,10 +389,14 @@ function install_kde() {
             echo 'icon=/home/coolblock/Pictures/logo.svg'
             echo 'systemFavorites=suspend\\,hibernate\\,reboot\\,shutdown'
             echo ''
-        } >> "${tmpf_logo}"
-        /usr/bin/sudo -u coolblock /usr/bin/cp -v "${tmpf_logo}" /home/coolblock/.config/plasma-org.kde.plasma.desktop-appletsrc
-        /usr/bin/rm -fv "${tmpf_logo}"
+        } >> /home/coolblock/.config/plasma-org.kde.plasma.desktop-appletsrc.new
+        /usr/bin/sudo -u coolblock /usr/bin/cp -v /home/coolblock/.config/plasma-org.kde.plasma.desktop-appletsrc.new /home/coolblock/.config/plasma-org.kde.plasma.desktop-appletsrc
+        /usr/bin/rm -fv /home/coolblock/.config/plasma-org.kde.plasma.desktop-appletsrc.new
     fi
+
+    echo -e "${c_prpl}>> Setting brand wallpaper ..${c_rst}"
+    download "https://downloads.coolblock.com/panel/wallpaper.jpg" "/home/coolblock/Pictures/wallpaper.jpg" coolblock
+    /usr/bin/sudo -u coolblock /usr/bin/sed -i 's#^Image=.*$#Image=/home/coolblock/Pictures/wallpaper.jpg#g' /home/coolblock/.config/plasma-org.kde.plasma.desktop-appletsrc
 
     echo -e "${c_prpl}>> Disabling screen blanking and power saving ..${c_rst}"
     {
@@ -462,10 +464,6 @@ function install_kde() {
     /usr/bin/sed -i 's/^ShouldShow=.*/ShouldShow=false/g' /home/coolblock/.config/plasma-welcomerc
     /usr/bin/chmod -v 0600 /home/coolblock/.config/plasma-welcomerc
     /usr/bin/chown -v coolblock:coolblock /home/coolblock/.config/plasma-welcomerc
-
-    echo -e "${c_prpl}>> Setting brand wallpaper ..${c_rst}"
-    download "https://downloads.coolblock.com/panel/wallpaper.jpg" "/home/coolblock/Pictures/wallpaper.jpg" coolblock
-    /usr/bin/sudo -u coolblock /usr/bin/sed -i 's#^Image=.*$#Image=/home/coolblock/Pictures/wallpaper.jpg#g' /home/coolblock/.config/plasma-org.kde.plasma.desktop-appletsrc
 
     return 0
 }
