@@ -199,10 +199,29 @@ function download() {
     fi
 }
 
+function mktmp() {
+
+    declare as_user="${1}"
+    declare -r tmpf="/tmp/$(/usr/bin/uuid)"
+
+    if [ -z "${as_user}" ]
+    then
+        as_user="${USER}"
+    fi
+
+    if /usr/bin/sudo -u "${as_user}" /usr/bin/touch "${tmpf}"
+    then
+        echo "${tmpf}"
+        return 0
+    fi
+
+    return 235
+}
+
 function create_user() {
 
     declare ssh_authorized_keys=""
-    declare tmp_ssh_keys=$(mktemp)
+    declare tmp_ssh_keys=$(mktmp)
 
     echo -e "${c_prpl}>> Creating system user 'coolblock' (if required) ..${c_rst}"
     /usr/sbin/useradd --home-dir /home/coolblock --create-home --shell /bin/bash coolblock
@@ -246,7 +265,7 @@ function install_prerequisites() {
 
     echo -e "${c_cyan}>> Installing helper packages (if not installed already) ..${c_rst}"
     /usr/bin/apt install -y \
-        sudo cron \
+        sudo cron uuid \
         vim nano \
         iputils-ping net-tools dnsutils tcpdump traceroute \
         git curl wget \
@@ -293,7 +312,7 @@ function install_docker() {
 
 function install_kde() {
 
-    declare -r tmpf_logo=$(/usr/bin/sudo -u coolblock /usr/bin/mktemp)
+    declare -r tmpf_logo=$(mktmp coolblock)
 
     echo -e "${c_cyan}>> Installing KDE (if not installed already) ..${c_rst}"
     /usr/bin/apt update
@@ -373,7 +392,7 @@ function install_kde() {
             echo 'systemFavorites=suspend\\,hibernate\\,reboot\\,shutdown'
             echo ''
         } >> "${tmpf_logo}"
-        /usr/bin/sudo -u coolblock /usr/bin/cat "${tmpf_logo}" > /home/coolblock/.config/plasma-org.kde.plasma.desktop-appletsrc
+        /usr/bin/sudo -u coolblock /usr/bin/cp -v "${tmpf_logo}" /home/coolblock/.config/plasma-org.kde.plasma.desktop-appletsrc
         /usr/bin/rm -fv "${tmpf_logo}"
     fi
 
@@ -965,7 +984,7 @@ function configure_crons() {
     fi
 
     echo -e "${c_prpl}>> Setting up scheduled tasks ..${c_rst}"
-    declare -r cron_housekeeping_file=$(/usr/bin/mktemp)
+    declare -r cron_housekeeping_file=$(mktmp)
     {
         echo "# Coolblock Panel - Crons"
         echo "### DO NOT EDIT ###"
