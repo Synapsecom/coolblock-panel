@@ -9,6 +9,9 @@
 ## Getting started
 
 1. Install latest Ubuntu Server 24.04 LTS. Please follow [this guide](INSTALLATION-ISO.md).
+
+   > When prompted for user creation, insert `coolblock` as Full Name and Username, insert `panel` for Hostname and the password of your choice (usually `coolblock` as it will be changed later by end customer).
+
 2. Run the bootstrap script to **install** or **upgrade** the stack:
 
    > The script prepares the project in /home/coolblock/panel and keeps database dumps in /home/coolblock/panel/backup. The license key is expiring every year for security and it is required to contact us for key rotation.
