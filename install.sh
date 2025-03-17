@@ -293,7 +293,7 @@ function install_docker() {
 
 function install_kde() {
 
-    declare -r tmpfs=$(/usr/bin/mktemp)
+    declare -r tmpf_logo=$(/usr/bin/mktemp)
 
     echo -e "${c_cyan}>> Installing KDE (if not installed already) ..${c_rst}"
     /usr/bin/apt update
@@ -354,7 +354,6 @@ function install_kde() {
     /usr/bin/chown -Rv coolblock:coolblock /home/coolblock/.config/kwinrc
     /usr/bin/chmod -v 0600 /home/coolblock/.config/kwinrc
 
-    declare tmpf=$(/usr/bin/mktemp)
     echo -e "${c_prpl}>> Changing taskbar icon ..${c_rst}"
     download "https://downloads.coolblock.com/panel/logo.svg" "/home/coolblock/Pictures/logo.svg" coolblock
     if /usr/bin/grep -q '\[Containments\]\[2\]\[Applets\]\[3\]\[Configuration\]\[General\]' -A 5 /home/coolblock/.config/plasma-org.kde.plasma.desktop-appletsrc \
@@ -365,7 +364,7 @@ function install_kde() {
             /home/coolblock/.config/plasma-org.kde.plasma.desktop-appletsrc
     else
         /usr/bin/sudo -u coolblock /usr/bin/sed '/^\[Containments\]\[2\]\[Applets\]\[3\]\[Configuration\]\[General\]$/,/^$/d' \
-            /home/coolblock/.config/plasma-org.kde.plasma.desktop-appletsrc > "${tmpf}"
+            /home/coolblock/.config/plasma-org.kde.plasma.desktop-appletsrc > "${tmpf_logo}"
         {
             echo ''
             echo '[Containments][2][Applets][3][Configuration][General]'
@@ -373,9 +372,9 @@ function install_kde() {
             echo 'icon=/home/coolblock/Pictures/logo.svg'
             echo 'systemFavorites=suspend\\,hibernate\\,reboot\\,shutdown'
             echo ''
-        } >> "${tmpf}"
-        /usr/bin/sudo -u coolblock /usr/bin/cp -v "${tmpf}" /home/coolblock/.config/plasma-org.kde.plasma.desktop-appletsrc
-        /usr/bin/rm -fv "${tmpf}"
+        } >> "${tmpf_logo}"
+        /usr/bin/sudo -u coolblock /usr/bin/cat "${tmpf_logo}" > /home/coolblock/.config/plasma-org.kde.plasma.desktop-appletsrc
+        /usr/bin/rm -fv "${tmpf_logo}"
     fi
 
     echo -e "${c_prpl}>> Disabling screen blanking and power saving ..${c_rst}"
