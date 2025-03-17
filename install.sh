@@ -684,7 +684,8 @@ function install_firefox() {
         echo '    }'
         echo '}'
     } > /etc/firefox/policies/policies.json
-    /usr/bin/chmod -Rv a=r /etc/firefox
+    /usr/bin/chmod -Rv a=rx /etc/firefox
+    /usr/bin/chmod -v a-x /etc/firefox/policies/policies.json
 
     return 0
 }
