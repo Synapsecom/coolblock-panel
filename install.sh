@@ -293,7 +293,7 @@ function install_docker() {
 
 function install_kde() {
 
-    declare -r tmpf_logo=$(/usr/bin/mktemp)
+    declare -r tmpf_logo=$(/usr/bin/sudo -u coolblock /usr/bin/mktemp)
 
     echo -e "${c_cyan}>> Installing KDE (if not installed already) ..${c_rst}"
     /usr/bin/apt update
