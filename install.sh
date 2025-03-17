@@ -49,64 +49,67 @@ function usage() {
 
 function check_arguments() {
 
-    if [ "${#}" -eq 0 ]; then
+    if [ "${#}" -eq 0 ]
+    then
         echo -e "${c_red}>> ERROR: No arguments specified.${c_rst}" 2>/dev/null
         usage
         return 10
     fi
 
     # Parse arguments
-    while [ "${#}" -gt 0 ]; do
+    while [ "${#}" -gt 0 ]
+    do
         case "${1}" in
-        --tank-model)
-            shift
-            tank_model="${1}"
-            shift
+            --tank-model)
+                shift
+                tank_model="${1}"
+                shift
+                ;;
+            --plc-model)
+                shift
+                plc_model="${1}"
+                shift
+                ;;
+            --serial-number)
+                shift
+                serial_number="${1}"
+                shift
             ;;
-        --plc-model)
-            shift
-            plc_model="${1}"
-            shift
-            ;;
-        --serial-number)
-            shift
-            serial_number="${1}"
-            shift
-        ;;
-        --license-key)
-            shift
-            license_key="${1}"
-            shift
-            ;;
-        --web-version)
-            shift
-            docker_tags[web]="${1}"
-            shift
-            ;;
-        --api-version)
-            shift
-            docker_tags[api]="${1}"
-            shift
-            ;;
-        --proxy-version)
-            shift
-            docker_tags[proxy]="${1}"
-            shift
-            ;;
-        -h|--help)
-            usage
-            return 1
-            ;;
-        *)
-            echo -e ">> Invalid argument: ${1}" 2>/dev/null
-            usage
-            return 20
-            ;;
+            --license-key)
+                shift
+                license_key="${1}"
+                shift
+                ;;
+            --web-version)
+                shift
+                docker_tags[web]="${1}"
+                shift
+                ;;
+            --api-version)
+                shift
+                docker_tags[api]="${1}"
+                shift
+                ;;
+            --proxy-version)
+                shift
+                docker_tags[proxy]="${1}"
+                shift
+                ;;
+            -h|--help)
+                usage
+                return 1
+                ;;
+            *)
+                echo -e ">> Invalid argument: ${1}" 2>/dev/null
+                usage
+                return 20
+                ;;
         esac
     done
 
     # Validate required parameters
-    if [[ -z "${tank_model}" || -z "${plc_model}" || -z "${serial_number}" || -z "${license_key}" ]]; then
+    if [[ -z "${tank_model}" || -z "${plc_model}" || -z "${serial_number}" || -z "${license_key}" ]]
+    then
         echo -e "${c_red}>> ERROR: --tank-model, --plc-model, --serial-number, and --license-key are required arguments.${c_rst}" 2>/dev/null
         usage
         return 30
@@ -117,14 +120,16 @@ function check_arguments() {
 
 function check_os() {
 
-    if [ -f "/etc/os-release" ]; then
+    if [ -f "/etc/os-release" ]
+    then
         source /etc/os-release
     else
         echo -e "${c_red}>> ERROR: Unable to determine OS.${c_rst}" 2>/dev/null
         return 200
     fi
 
-    if [[ "${ID}" != "ubuntu" || "${VERSION_ID}" != "24.04" ]]; then
+    if [[ "${ID}" != "ubuntu" || "${VERSION_ID}" != "24.04" ]]
+    then
         echo -e "${c_red}>> ERROR: This script supports only Ubuntu 24.04 LTS.${c_rst}" 2>/dev/null
         echo -e "${c_red}>> Detected OS: ${ID} ${VERSION_ID}${c_rst}" 2>/dev/null
         return 201
@@ -136,7 +141,8 @@ function check_os() {
 
 function is_root() {
 
-    if [[ "${EUID}" -ne 0 ]]; then
+    if [[ "${EUID}" -ne 0 ]]
+    then
         echo -e "${c_red}>> ERROR: This script must be run as root.${c_rst}" 2>/dev/null
         return 40
     fi
@@ -158,7 +164,8 @@ function download() {
     declare as_user="${3}"
     declare http_status
 
-    if [ -z "${as_user}" ]; then
+    if [ -z "${as_user}" ]
+    then
         as_user="${USER}"
     fi
 
@@ -168,17 +175,22 @@ function download() {
                     --max-time 30 --output "${output_file}" --url "${url}")
 
     # Check for successful HTTP status codes (200 OK, 206 Partial Content, etc.)
-    if [[ "${http_status}" -ge 200 && "${http_status}" -lt 300 ]]; then
-        if [ -s "${output_file}" ]; then
+    if [[ "${http_status}" -ge 200 && "${http_status}" -lt 300 ]]
+    then
+        if [ -s "${output_file}" ]
+        then
             echo -e "${c_grn}>> Download successful: '${url}' --> '${output_file}'.${c_rst}"
             return 0
         fi
+
         echo -e "${c_red}>> ERROR: Downloaded file is empty or missing: '${output_file}'.${c_rst}" 2>/dev/null
         return 1
-    elif [[ "${http_status}" -eq 404 ]]; then
+    elif [[ "${http_status}" -eq 404 ]]
+    then
         echo -e "${c_red}>> ERROR: File not found (HTTP 404) at '${url}'.${c_rst}" 2>/dev/null
         return 1
-    elif [[ "${http_status}" -ge 400 ]]; then
+    elif [[ "${http_status}" -ge 400 ]]
+    then
         echo -e "${c_red}>> ERROR: HTTP request of '${url}' failed with status code '${http_status}'.${c_rst}" 2>/dev/null
         return 1
     else
@@ -201,12 +213,14 @@ function create_user() {
 
     echo -e "${c_prpl}>> Downloading Coolblock SSH public keys (will merge existing) ..${c_rst}"
     download "https://downloads.coolblock.com/keys" "${tmp_ssh_keys}"
-    if [ "${?}" -ne 0 ]; then
+    if [ "${?}" -ne 0 ]
+    then
         return 1
     fi
 
     echo -e "${c_prpl}>> Configuring SSH authorized_keys of 'coolblock' user ..${c_rst}"
-    if [ -f "/home/coolblock/.ssh/authorized_keys" ]; then
+    if [ -f "/home/coolblock/.ssh/authorized_keys" ]
+    then
         ssh_authorized_keys=$(echo; /usr/bin/cat "/home/coolblock/.ssh/authorized_keys"; echo)
     fi
     ssh_authorized_keys+=$(echo; /usr/bin/cat "${tmp_ssh_keys}"; echo)
@@ -247,7 +261,8 @@ function install_prerequisites() {
 function install_docker() {
 
     echo -e "${c_cyan}>> Installing Docker (if not installed already) ..${c_rst}"
-    if ! hash docker &>/dev/null; then
+    if ! hash docker &>/dev/null
+    then
         /usr/bin/install -m 0755 -d /etc/apt/keyrings
         /usr/bin/curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
         /usr/bin/chmod -v a+r /etc/apt/keyrings/docker.asc
@@ -260,7 +275,8 @@ function install_docker() {
     fi
 
     echo -e "${c_prpl}>> Creating Docker network (if does not exist) ..${c_rst}"
-    if [ ! $(/usr/bin/docker network ls --filter=name=coolblock-panel --quiet) ]; then
+    if [ ! $(/usr/bin/docker network ls --filter=name=coolblock-panel --quiet) ]
+    then
         /usr/bin/docker network create --driver=bridge --subnet=${DOCKER_SUBNET:-172.20.0.0/16} --ip-range=${DOCKER_IP_RANGE:-172.20.0.0/24} --gateway=${DOCKER_GATEWAY:-172.20.0.1} coolblock-panel
         /usr/bin/docker network ls --filter=name=coolblock-panel
     fi
@@ -275,7 +291,142 @@ function install_docker() {
     return 0
 }
 
-function install_gui() {
+function install_kde() {
+
+    echo -e "${c_cyan}>> Installing KDE (if not installed already) ..${c_rst}"
+    /usr/bin/apt update
+    /usr/bin/apt install -y kubuntu-desktop xdg-utils qtvirtualkeyboard-plugin maliit-keyboard maliit-inputmethod-plugin plasma-wayland-protocols plasma-workspace-wayland plasma-mobile-tweaks
+
+    echo -e "${c_prpl}>> Configuring SDDM autologin ..${c_rst}"
+    /usr/bin/mkdir -pv /etc/sddm.conf.d
+    {
+        echo "[Autologin]"
+        echo "User=coolblock"
+        echo "Session=plasmawayland"
+    } > /etc/sddm.conf.d/autologin.conf
+
+    echo -e "${c_prpl}>> Preparing user namespace configuration directory ..${c_rst}"
+    /usr/bin/sudo -u coolblock /usr/bin/mkdir -pv /home/coolblock/.config
+
+    echo -e "${c_prpl}>> Enabling virtual keyboard ..${c_rst}"
+    if /usr/bin/grep -q "InputMethod" /home/coolblock/.config/kwinrc \
+        && /usr/bin/grep -q "maliit" /home/coolblock/.config/kwinrc
+    then
+        /usr/bin/sudo -u coolblock /usr/bin/sed -i \
+            -e 's#^InputMethod\[$e\]=.*$#InputMethod[$e]=/usr/share/applications/com.github.maliit.keyboard.desktop#g' \
+            /home/coolblock/.config/kwinrc
+    else
+        {
+            echo ''
+            echo '[Wayland]'
+            echo 'InputMethod[$e]=/usr/share/applications/com.github.maliit.keyboard.desktop'
+            echo ''
+        } >> /home/coolblock/.config/kwinrc
+    fi
+    /usr/bin/chown -Rv coolblock:coolblock /home/coolblock/.config/kwinrc
+    /usr/bin/chmod -v 0600 /home/coolblock/.config/kwinrc
+
+    # make maliit keyboard follow system color scheme
+    if ! /usr/bin/grep -q QT_QUICK_CONTROLS_STYLE /etc/environment
+    then
+        echo 'QT_QUICK_CONTROLS_STYLE=org.kde.desktop' >> /etc/environment
+    fi
+
+    echo -e "${c_prpl}>> Disabling screen edges ..${c_rst}"
+    if /usr/bin/grep -q "ElectricBorderMaximize" /home/coolblock/.config/kwinrc \
+        && /usr/bin/grep -q "ElectricBorderTiling" /home/coolblock/.config/kwinrc
+    then
+        /usr/bin/sudo -u coolblock /usr/bin/sed -i \
+            -e 's#^ElectricBorderMaximize=.*$#ElectricBorderMaximize=false#g' \
+            -e 's#^ElectricBorderTiling=.*$#ElectricBorderTiling=false#g' \
+            /home/coolblock/.config/kwinrc
+    else
+        {
+            echo ''
+            echo '[Windows]'
+            echo 'ElectricBorderMaximize=false'
+            echo 'ElectricBorderTiling=false'
+            echo ''
+        } >> /home/coolblock/.config/kwinrc
+    fi
+    /usr/bin/chown -Rv coolblock:coolblock /home/coolblock/.config/kwinrc
+    /usr/bin/chmod -v 0600 /home/coolblock/.config/kwinrc
+
+    echo -e "${c_prpl}>> Disabling screen blanking and power saving ..${c_rst}"
+    {
+        echo '[AC]'
+        echo 'icon=battery-charging'
+        echo ''
+        echo '[AC][DimDisplay]'
+        echo 'idleTime=300000'
+        echo ''
+        echo '[Battery]'
+        echo 'icon=battery-060'
+        echo ''
+        echo '[Battery][DPMSControl]'
+        echo 'idleTime=300'
+        echo 'lockBeforeTurnOff=0'
+        echo ''
+        echo '[Battery][DimDisplay]'
+        echo 'idleTime=120000'
+        echo ''
+        echo '[Battery][HandleButtonEvents]'
+        echo 'lidAction=1'
+        echo 'powerButtonAction=16'
+        echo 'powerDownAction=16'
+        echo ''
+        echo '[Battery][SuspendSession]'
+        echo 'idleTime=600000'
+        echo 'suspendThenHibernate=false'
+        echo 'suspendType=1'
+        echo ''
+        echo '[LowBattery]'
+        echo 'icon=battery-low'
+        echo ''
+        echo '[LowBattery][BrightnessControl]'
+        echo 'value=30'
+        echo ''
+        echo '[LowBattery][DPMSControl]'
+        echo 'idleTime=120'
+        echo 'lockBeforeTurnOff=0'
+        echo ''
+        echo '[LowBattery][DimDisplay]'
+        echo 'idleTime=60000'
+        echo ''
+        echo '[LowBattery][HandleButtonEvents]'
+        echo 'lidAction=1'
+        echo 'powerButtonAction=16'
+        echo 'powerDownAction=16'
+        echo ''
+        echo '[LowBattery][SuspendSession]'
+        echo 'idleTime=300000'
+        echo 'suspendThenHibernate=false'
+        echo 'suspendType=1'
+    } > /home/coolblock/.config/powermanagementprofilesrc
+    /usr/bin/chown -Rv coolblock:coolblock /home/coolblock/.config/powermanagementprofilesrc
+    /usr/bin/chmod -v 0600 /home/coolblock/.config/powermanagementprofilesrc
+
+    echo -e "${c_prpl}>> Disabling screen locking ..${c_rst}"
+    {
+        echo '[Daemon]'
+        echo 'Autolock=false'
+        echo 'LockOnResume=false'
+    } > /home/coolblock/.config/kscreenlockerrc
+    /usr/bin/chown -v coolblock:coolblock /home/coolblock/.config/kscreenlockerrc
+
+    echo -e "${c_prpl}>> Disabling KDE welcome screen ..${c_rst}"
+    /usr/bin/sed -i 's/^ShouldShow=.*/ShouldShow=false/g' /home/coolblock/.config/plasma-welcomerc
+    /usr/bin/chmod -v 0600 /home/coolblock/.config/plasma-welcomerc
+    /usr/bin/chown -v coolblock:coolblock /home/coolblock/.config/plasma-welcomerc
+
+    echo -e "${c_prpl}>> Setting brand wallpaper ..${c_rst}"
+    download "https://downloads.coolblock.com/panel/wallpaper.jpg" "/home/coolblock/Pictures/wallpaper.jpg" coolblock
+    /usr/bin/sudo -u coolblock /usr/bin/sed -i 's#^Image=.*$#Image=/home/coolblock/Pictures/wallpaper.jpg#g' /home/coolblock/.config/plasma-org.kde.plasma.desktop-appletsrc
+
+    return 0
+}
+
+function install_gnome() {
 
     declare -r user_id=$(/usr/bin/id -u coolblock)
 
@@ -287,7 +438,7 @@ function install_gui() {
     /usr/bin/apt update
     /usr/bin/apt install -y gnome-session gdm3 xdotool xdg-utils dbus-x11 policykit-1
 
-    echo -e "${c_prpl}>> Configuring auto-login ..${c_rst}"
+    echo -e "${c_prpl}>> Configuring GDM autologin ..${c_rst}"
     /usr/bin/mkdir -pv /etc/gdm3/
     {
         echo "[chooser]"
@@ -296,7 +447,7 @@ function install_gui() {
         echo "[daemon]"
         echo "AutomaticLoginEnable=true"
         echo "AutomaticLogin=coolblock"
-        echo "WaylandEnable=false"
+        # echo "WaylandEnable=false"
         echo
         echo "[security]"
         echo "DisallowTCP=true"
@@ -305,25 +456,92 @@ function install_gui() {
         echo "Enable=false"
     } > /etc/gdm3/custom.conf
 
-    /usr/bin/sudo -E -u coolblock /usr/bin/gsettings set org.gnome.desktop.session idle-delay 0
-    /usr/bin/sudo -E -u coolblock /usr/bin/gsettings set org.gnome.desktop.screensaver lock-enabled false
-    /usr/bin/sudo -E -u coolblock /usr/bin/gsettings set org.gnome.desktop.lockdown disable-lock-screen true
+    echo -e "${c_prpl}>> Tweaking Gnome ..${c_rst}"
+    /usr/bin/sudo -E -u coolblock /usr/bin/gsettings set org.gnome.shell disable-user-extensions true
+    /usr/bin/sudo -E -u coolblock /usr/bin/gsettings set org.gnome.mutter dynamic-workspaces false
     /usr/bin/sudo -E -u coolblock /usr/bin/gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type 'nothing'
     /usr/bin/sudo -E -u coolblock /usr/bin/gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-battery-type 'nothing'
-    /usr/bin/sudo -E -u coolblock /usr/bin/gsettings set org.gnome.mutter dynamic-workspaces false
+    /usr/bin/sudo -E -u coolblock /usr/bin/gsettings set org.gnome.desktop.session idle-delay 0
+    /usr/bin/sudo -E -u coolblock /usr/bin/gsettings set org.gnome.desktop.screensaver lock-enabled false
     /usr/bin/sudo -E -u coolblock /usr/bin/gsettings set org.gnome.desktop.wm.preferences num-workspaces 1
+    /usr/bin/sudo -E -u coolblock /usr/bin/gsettings set org.gnome.desktop.wm.preferences audible-bell false
+    /usr/bin/sudo -E -u coolblock /usr/bin/gsettings set org.gnome.desktop.wm.preferences action-double-click-titlebar 'none'
+    /usr/bin/sudo -E -u coolblock /usr/bin/gsettings set org.gnome.desktop.wm.preferences action-middle-click-titlebar 'none'
+    /usr/bin/sudo -E -u coolblock /usr/bin/gsettings set org.gnome.desktop.wm.preferences action-right-click-titlebar 'none'
+    /usr/bin/sudo -E -u coolblock /usr/bin/gsettings set org.gnome.desktop.wm.preferences auto-raise true
     /usr/bin/sudo -E -u coolblock /usr/bin/gsettings set org.gnome.desktop.interface gtk-theme 'Adwaita-dark'
     /usr/bin/sudo -E -u coolblock /usr/bin/gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
+    /usr/bin/sudo -E -u coolblock /usr/bin/gsettings set org.gnome.desktop.interface enable-hot-corners false
+    /usr/bin/sudo -E -u coolblock /usr/bin/gsettings set org.gnome.desktop.interface cursor-size 0
+    /usr/bin/sudo -E -u coolblock /usr/bin/gsettings set org.gnome.desktop.a11y.applications always-show-universal-access-status true
     /usr/bin/sudo -E -u coolblock /usr/bin/gsettings set org.gnome.desktop.a11y.applications screen-keyboard-enabled true
     /usr/bin/sudo -E -u coolblock /usr/bin/gsettings set org.gnome.desktop.a11y.applications screen-reader-enabled false
     /usr/bin/sudo -E -u coolblock /usr/bin/gsettings set org.gnome.desktop.a11y.applications screen-magnifier-enabled false
+    /usr/bin/sudo -E -u coolblock /usr/bin/gsettings set org.gnome.desktop.peripherals.touchpad disable-while-typing false
     /usr/bin/sudo -E -u coolblock /usr/bin/gsettings set org.gnome.desktop.background picture-uri https://downloads.coolblock.com/panel/wallpaper.jpg
     /usr/bin/sudo -E -u coolblock /usr/bin/gsettings set org.gnome.desktop.background picture-uri-dark https://downloads.coolblock.com/panel/wallpaper.jpg
+    /usr/bin/sudo -E -u coolblock /usr/bin/gsettings set org.gnome.desktop.sound event-sounds false
+    /usr/bin/sudo -E -u coolblock /usr/bin/gsettings set org.gnome.desktop.privacy disable-camera true
+    /usr/bin/sudo -E -u coolblock /usr/bin/gsettings set org.gnome.desktop.privacy disable-microphone true
+    /usr/bin/sudo -E -u coolblock /usr/bin/gsettings set org.gnome.desktop.privacy disable-sound-output true
+    /usr/bin/sudo -E -u coolblock /usr/bin/gsettings set org.gnome.desktop.privacy old-files-age 1
+    /usr/bin/sudo -E -u coolblock /usr/bin/gsettings set org.gnome.desktop.privacy usb-protection false
+    /usr/bin/sudo -E -u coolblock /usr/bin/gsettings set org.gnome.desktop.lockdown disable-print-setup true
+    /usr/bin/sudo -E -u coolblock /usr/bin/gsettings set org.gnome.desktop.lockdown disable-printing true
+    /usr/bin/sudo -E -u coolblock /usr/bin/gsettings set org.gnome.desktop.lockdown disable-user-switching true
+    /usr/bin/sudo -E -u coolblock /usr/bin/gsettings set org.gnome.desktop.lockdown disable-log-out true
+    /usr/bin/sudo -E -u coolblock /usr/bin/gsettings set org.gnome.desktop.lockdown disable-lock-screen true
+    /usr/bin/sudo -E -u coolblock /usr/bin/gsettings set org.gnome.desktop.lockdown mount-removable-storage-devices-as-read-only true
+    /usr/bin/sudo -E -u coolblock /usr/bin/gsettings set org.gnome.desktop.media-handling automount false
+    /usr/bin/sudo -E -u coolblock /usr/bin/gsettings set org.gnome.desktop.media-handling automount-open false
+    /usr/bin/sudo -E -u coolblock /usr/bin/gsettings set org.gnome.desktop.notifications show-banners false
+
+    # echo -e "${c_cyan}>> Installing Unclutter (if not installed already) ..${c_rst}"
+    # /usr/bin/apt update
+    # /usr/bin/apt install -y unclutter-xfixes
+
+    # echo -e "${c_cyan}>> Installing Touchegg for screen gestures (if not installed already) ..${c_rst}"
+    # echo 'precedence ::ffff:0:0/96  100' > /etc/gai.conf  # fixes ppa hung
+    # /usr/bin/add-apt-repository --yes --no-update ppa:touchegg/stable
+    # /usr/bin/apt update
+    # /usr/bin/apt install -y touchegg
+    # /usr/bin/gnome-extensions install https://extensions.gnome.org/extension-data/x11gesturesjoseexposito.github.io.v24.shell-extension.zip
+
+    # echo -e "${c_prpl}>> Configuring screen gestures ..${c_rst}"
+    # /usr/bin/sudo -u coolblock /usr/bin/mkdir -pv /home/coolblock/.config/touchegg
+    # {
+    #     echo '<touchégg>'
+
+    #     echo '  <gesture type="TAP" fingers="1">'
+    #     echo '    <action type="MOUSE" button="LEFT"/>'
+    #     echo '  </gesture>'
+
+    #     echo '  <gesture type="TAP" fingers="2">'
+    #     echo '    <action type="MOUSE" button="RIGHT"/>'
+    #     echo '  </gesture>'
+
+    #     echo '  <gesture type="DRAG" fingers="2" direction="ALL">'
+    #     echo '    <action type="SCROLL"/>'
+    #     echo '  </gesture>'
+
+    #     echo '  <gesture type="SWIPE" fingers="3" direction="DOWN">'
+    #     echo '    <action type="KEYSTROKE">CTRL+R</action>'
+    #     echo '  </gesture>'
+
+    #     echo '</touchégg>'
+    # } > /home/coolblock/.config/touchegg/touchegg.conf
+    # /usr/bin/chown -v coolblock:coolblock /home/coolblock/.config/touchegg/touchegg.conf
+
+    # echo -e "${c_prpl}>> Enabling screen gestures ..${c_rst}"
+    # /usr/bin/systemctl enable touchegg
 
     return 0
 }
 
 function install_firefox() {
+
+    echo -e "${c_cyan}>> Uninstalling previous Mozilla Firefox (if any) ..${c_rst}"
+    /usr/bin/apt remove -y --purge firefox*
 
     echo -e "${c_cyan}>> Installing Mozilla signing key ..${c_rst}"
     /usr/bin/wget -q https://packages.mozilla.org/apt/repo-signing-key.gpg -O- \
@@ -357,7 +575,8 @@ function install_firefox() {
 
     echo -e "${c_cyan}>> Downloading browser script ..${c_rst}"
     download "https://downloads.coolblock.com/panel/browser.sh" "${pdir}/browser.sh" coolblock
-    if [ "${?}" -ne 0 ]; then
+    if [ "${?}" -ne 0 ]
+    then
         return 169
     fi
     /usr/bin/chmod -v 0750 "${pdir}/browser.sh"
@@ -451,7 +670,8 @@ function install_panel() {
 
     echo -e "${c_prpl}>> Validating license ..${c_rst}"
     docker_login=$(echo "${license_key}" | /usr/bin/sudo -u coolblock /usr/bin/docker login --username "${serial_number}" --password-stdin registry.coolblock.com 2>&1)
-    if ! /usr/bin/grep -qi "login succeed" <<< "${docker_login}"; then
+    if ! /usr/bin/grep -qi "login succeed" <<< "${docker_login}"
+    then
         echo -e "${c_red}>> ERROR: Invalid license. Please contact Coolblock staff.${c_rst}" 2>/dev/null
         return 50
     fi
@@ -461,13 +681,15 @@ function install_panel() {
     /usr/bin/sudo -u coolblock /usr/bin/mkdir -pv "${pdir}/backup" "${pdir}/certs"
 
     echo -e "${c_prpl}>> Stopping services (if running) ..${c_rst}"
-    if [ -f "${pdir}/docker-compose.yml" ]; then
+    if [ -f "${pdir}/docker-compose.yml" ]
+    then
         /usr/bin/systemctl stop coolblock-panel.service
         /usr/bin/docker compose -f "${pdir}/docker-compose.yml" down
     fi
 
     echo -e "${c_prpl}>> Generating certificates (if not already) ..${c_rst}"
-    if [ -f "${pdir}/docker-compose.yml" ]; then
+    if [ -f "${pdir}/docker-compose.yml" ]
+    then
         /usr/bin/sudo -u coolblock /usr/bin/docker compose -f "${pdir}/docker-compose.yml" pull proxy
         /usr/bin/sudo -u coolblock /usr/bin/docker compose -f "${pdir}/docker-compose.yml" up -d proxy
         /usr/bin/timeout 5 /usr/bin/docker compose -f "${pdir}/docker-compose.yml" logs -f proxy || /usr/bin/true
@@ -475,11 +697,13 @@ function install_panel() {
     fi
 
     echo -e "${c_prpl}>> Backing up mysql database (if available) ..${c_rst}"
-    if [[ -f "/home/coolblock/.my.cnf" && -f "${pdir}/docker-compose.yml" ]]; then
+    if [[ -f "/home/coolblock/.my.cnf" && -f "${pdir}/docker-compose.yml" ]]
+    then
         /usr/bin/sudo -u coolblock /usr/bin/docker compose -f "${pdir}/docker-compose.yml" pull mysql
         /usr/bin/sudo -u coolblock /usr/bin/docker compose -f "${pdir}/docker-compose.yml" up -d mysql
         echo -e "${c_ylw}>> Waiting for mysql database ..${c_rst}"
-        while :; do
+        while /usr/bin/true
+        do
             /usr/bin/sleep 1
             echo -e "${c_grn}>> SELECT updated_at from users where id=1${c_rst}"
             /usr/bin/sudo -u coolblock /usr/bin/mysql --defaults-file=/home/coolblock/.my.cnf coolblock-panel -Bsqe 'SELECT updated_at from users where id=1' && break
@@ -497,14 +721,16 @@ function install_panel() {
     fi
 
     echo -e "${c_prpl}>> Stopping services (if running) ..${c_rst}"
-    if [ -f "${pdir}/docker-compose.yml" ]; then
+    if [ -f "${pdir}/docker-compose.yml" ]
+    then
         /usr/bin/systemctl stop coolblock-panel.service
         /usr/bin/docker compose -f "${pdir}/docker-compose.yml" down
     fi
 
     echo -e "${c_prpl}>> Downloading Docker deployment file ..${c_rst}"
     download "https://downloads.coolblock.com/panel/docker-compose.yml.tmpl" "${pdir}/docker-compose.yml" coolblock
-    if [ "${?}" -ne 0 ]; then
+    if [ "${?}" -ne 0 ]
+    then
         return 60
     fi
 
@@ -516,17 +742,20 @@ function install_panel() {
         "${pdir}/docker-compose.yml"
 
     echo -e "${c_prpl}>> Pulling Docker images (if available) ..${c_rst}"
-    if [ -f "${pdir}/.env" ]; then
+    if [ -f "${pdir}/.env" ]
+    then
         /usr/bin/sudo -u coolblock /usr/bin/docker compose -f "${pdir}/docker-compose.yml" pull
     fi
 
     echo -e "${c_prpl}>> Backing up existing environment file (if available).. ${c_rst}"
-    if [ -f "${pdir}/.env" ]; then
+    if [ -f "${pdir}/.env" ]
+    then
         /usr/bin/sudo -u coolblock cp -pv "${pdir}/.env" "${pdir}/.env.bak" 2>/dev/null
     fi
 
     echo -e "${c_prpl}>> Generating secrets (old ones will be kept, if available).. ${c_rst}"
-    if [ -f "${pdir}/.env.bak" ]; then
+    if [ -f "${pdir}/.env.bak" ]
+    then
         old_env=$(/usr/bin/cat "${pdir}/.env.bak")
         jwt_secret=$(/usr/bin/awk -F= '/^CB_PANEL_JWT_SECRET/{print $2}' <<< "${old_env}" | /usr/bin/tr -d "'\n")
         mysql_password=$(/usr/bin/awk -F= '/^MYSQL_PASSWORD/{print $2}' <<< "${old_env}" | /usr/bin/tr -d "'\n")
@@ -543,7 +772,8 @@ function install_panel() {
 
     echo -e "${c_prpl}>> Downloading environment file ..${c_rst}"
     download "https://downloads.coolblock.com/panel/env.tmpl" "${pdir}/.env" coolblock
-    if [ "${?}" -ne 0 ]; then
+    if [ "${?}" -ne 0 ]
+    then
         return 70
     fi
 
@@ -561,7 +791,8 @@ function install_panel() {
 
     echo -e "${c_prpl}>> Downloading database schema file ..${c_rst}"
     download "https://downloads.coolblock.com/panel/init.sql" "${pdir}/init.sql" coolblock
-    if [ "${?}" -ne 0 ]; then
+    if [ "${?}" -ne 0 ]
+    then
         return 80
     fi
     /usr/bin/chmod -v 0644 "${pdir}/init.sql"
@@ -578,12 +809,15 @@ function install_panel() {
     /usr/bin/chmod -v 0400 /home/coolblock/.my.cnf
 
     echo -e "${c_prpl}>> Patching mysql database and restoring users (if applicable) ..${c_rst}"
-    if [[ -f "${pdir}/backup/coolblock-panel.sql" && -f "${pdir}/backup/coolblock-panel_users.sql" ]]; then
+    if [[ -f "${pdir}/backup/coolblock-panel.sql" && -f "${pdir}/backup/coolblock-panel_users.sql" ]]
+    then
         /usr/bin/docker compose -f "${pdir}/docker-compose.yml" down mysql
         /usr/bin/docker volume rm panel_coolblock-panel-web-database-data
         /usr/bin/sudo -u coolblock /usr/bin/docker compose -f "${pdir}/docker-compose.yml" up -d mysql
+
         echo -e "${c_ylw}>> Waiting for mysql database ..${c_rst}"
-        while :; do
+        while /usr/bin/true
+        do
             /usr/bin/sleep 1
             echo -e "${c_grn}>> SELECT updated_at FROM users WHERE id=1${c_rst}"
             /usr/bin/sudo -u coolblock /usr/bin/mysql --defaults-file=/home/coolblock/.my.cnf coolblock-panel -Bsqe 'SELECT updated_at FROM users WHERE id=1' && break
@@ -595,9 +829,11 @@ function install_panel() {
     fi
 
     echo -e "${c_prpl}>> Initializing database (if applicable) ..${c_rst}"
-    if ! /usr/bin/docker volume ls | /usr/bin/grep panel_coolblock-panel-web-database-data; then
+    if ! /usr/bin/docker volume ls | /usr/bin/grep panel_coolblock-panel-web-database-data
+    then
         /usr/bin/sudo -u coolblock /usr/bin/docker compose -f "${pdir}/docker-compose.yml" up -d mysql
-        while ! /usr/bin/docker ps | /usr/bin/grep "(healthy)"; do
+        while ! /usr/bin/docker ps | /usr/bin/grep "(healthy)"
+        do
             echo -e "${c_ylw}>> Waiting for database to become healthy .."
             /usr/bin/sleep 1
         done
@@ -613,9 +849,7 @@ function install_panel() {
         echo "[Service]"
         echo "User=coolblock"
         echo "Group=coolblock"
-        # echo "RemainAfterExit=true"
         echo "WorkingDirectory=${pdir}"
-        # echo "ExecStart=/bin/bash -c 'docker compose up -d --remove-orphans'"
         echo "ExecStart=/bin/bash -c 'docker compose up --remove-orphans'"
         echo "ExecStop=/bin/bash -c 'docker compose down'"
         echo "Restart=no"
@@ -635,21 +869,16 @@ function install_panel() {
 
 function configure_sysctl() {
 
-    echo -e "${c_cyan}>> Disabling Magic SysRq ..${c_rst}"
+    echo -e "${c_cyan}>> Tweaking kernel settings ..${c_rst}"
     {
         echo "# Coolblock Panel - Magic SysRq"
         echo "### DO NOT EDIT ###"
         echo "kernel.sysrq = 0"
-    } > /etc/sysctl.d/10-magic-sysrq.conf
-
-    echo -e "${c_cyan}>> Disabling IPv6 ..${c_rst}"
-    {
-        echo "# Coolblock Panel - IPv6"
-        echo "### DO NOT EDIT ###"
         echo "net.ipv6.conf.all.disable_ipv6 = 1"
         echo "net.ipv6.conf.default.disable_ipv6 = 1"
         echo "net.ipv6.conf.lo.disable_ipv6 = 1"
-    } > /etc/sysctl.d/10-disable-ipv6.conf
+    } > /etc/sysctl.conf
+    /usr/bin/sysctl -p /etc/sysctl.conf
 
     return 0
 }
@@ -657,7 +886,8 @@ function configure_sysctl() {
 function configure_network() {
 
     echo -e "${c_cyan}>> Configuring network ..${c_rst}"
-    if [ "${CONFIGURE_NETWORK:-yes}" == "yes" ]; then
+    if [ "${CONFIGURE_NETWORK:-yes}" == "yes" ]
+    then
         /usr/bin/rm -fv /etc/netplan/*
 
         {
@@ -689,7 +919,8 @@ function configure_crons() {
 
     echo -e "${c_cyan}>> Downloading housekeeping script ..${c_rst}"
     download "https://downloads.coolblock.com/panel/housekeeping.sh" "${pdir}/housekeeping.sh" coolblock
-    if [ "${?}" -ne 0 ]; then
+    if [ "${?}" -ne 0 ]
+    then
         return 156
     fi
 
@@ -715,6 +946,20 @@ function debloat() {
     /usr/bin/systemctl mask avahi-daemon.socket
     /usr/bin/systemctl disable --global pipewire
     /usr/bin/systemctl disable --global wireplumber
+    /usr/bin/systemctl disable bluetooth.service
+    /usr/bin/systemctl mask bluetooth.service
+    /usr/bin/systemctl disable cups.service cups.socket cups.path cups-browsed.service
+    /usr/bin/systemctl mask cups.service cups.socket cups.path cups-browsed.service
+    /usr/bin/systemctl disable ModemManager.service
+    /usr/bin/systemctl mask ModemManager.service
+    /usr/bin/systemctl disable ubuntu-advantage.service
+    /usr/bin/systemctl mask ubuntu-advantage.service
+    /usr/bin/systemctl disable ufw.service
+    /usr/bin/systemctl mask ufw.service
+    /usr/bin/systemctl disable apport.service
+    /usr/bin/systemctl mask apport.service
+    /usr/bin/systemctl disable snapd.service snapd.socket snapd.apparmor.service snapd.autoimport.service snapd.core-fixup.service snapd.recovery-chooser-trigger.service snapd.seeded.service snapd.system-shutdown.service
+    /usr/bin/systemctl mask snapd.service snapd.socket snapd.apparmor.service snapd.autoimport.service snapd.core-fixup.service snapd.recovery-chooser-trigger.service snapd.seeded.service snapd.system-shutdown.service
 
     echo -e "${c_prpl}>> Blacklisting unnecessary kernel modules ..${c_rst}"
     {
@@ -738,6 +983,31 @@ function debloat() {
         echo "blacklist snd_timer"
         echo "blacklist pcspkr"
     } > /etc/modprobe.d/coolblock-blacklist.conf
+
+    echo -e "${c_prpl}>> Uninstalling unnecessary APT packages ..${c_rst}"
+    /usr/bin/apt remove -y --purge \
+        needrestart* \
+        libreoffice* \
+        kate* \
+        kde-spectacle* \
+        kcalc* \
+        ark* \
+        partitionmanager* \
+        dolphin* \
+        usb-creator* \
+        kwalletmanager* \
+        ksystemlog* \
+        plasma-discover* \
+        okular* \
+        elisa* \
+        haruna* \
+        neochat* \
+        kdeconnect* \
+        krdc* \
+        konversation* \
+        gwenview* \
+        skanlite* skanpage* \
+        kdegames* kmahjongg* kmines* ksudoku* kpat*
 
     return 0
 }
@@ -771,6 +1041,10 @@ function main() {
     declare -r is_root_rc="${?}"
     [ "${is_root_rc}" -ne 0 ] && return "${is_root_rc}"
 
+    configure_sysctl
+    declare -r configure_sysctl_rc="${?}"
+    [ "${configure_sysctl_rc}" -ne 0 ] && return "${configure_sysctl_rc}"
+
     install_prerequisites
     declare -r install_prerequisites_rc="${?}"
     [ "${install_prerequisites_rc}" -ne 0 ] && return "${install_prerequisites_rc}"
@@ -783,9 +1057,13 @@ function main() {
     declare -r create_user_rc="${?}"
     [ "${create_user_rc}" -ne 0 ] && return "${create_user_rc}"
 
-    install_gui
-    declare -r install_gui_rc="${?}"
-    [ "${install_gui_rc}" -ne 0 ] && return "${install_gui_rc}"
+    install_kde
+    declare -r install_kde_rc="${?}"
+    [ "${install_kde_rc}" -ne 0 ] && return "${install_kde_rc}"
+
+    # install_gnome
+    # declare -r install_gnome_rc="${?}"
+    # [ "${install_gnome_rc}" -ne 0 ] && return "${install_gnome_rc}"
 
     install_panel
     declare -r install_panel_rc="${?}"
@@ -802,10 +1080,6 @@ function main() {
     configure_crons
     declare -r configure_crons_rc="${?}"
     [ "${configure_crons_rc}" -ne 0 ] && return "${configure_crons_rc}"
-
-    configure_sysctl
-    declare -r configure_sysctl_rc="${?}"
-    [ "${configure_sysctl_rc}" -ne 0 ] && return "${configure_sysctl_rc}"
 
     configure_network
     declare -r configure_network_rc="${?}"
