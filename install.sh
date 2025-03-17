@@ -867,9 +867,24 @@ function install_panel() {
     return 0
 }
 
+function configure_grub() {
+
+    echo -e "${c_prpl}>> Configuring GRUB ..${c_rst}"
+    /usr/bin/sed -i \
+        -e 's#^GRUB_CMDLINE_LINUX_DEFAULT=.*$#GRUB_CMDLINE_LINUX_DEFAULT="quiet splash ipv6.disable=1 ipv6.disable_ipv6=1"#g' \
+        /etc/default/grub
+
+    if ! /usr/sbin/update-grub
+    then
+        return 212
+    fi
+
+    return 0
+}
+
 function configure_sysctl() {
 
-    echo -e "${c_cyan}>> Tweaking kernel settings ..${c_rst}"
+    echo -e "${c_prpl}>> Tweaking kernel settings ..${c_rst}"
     {
         echo "# Coolblock Panel - Magic SysRq"
         echo "### DO NOT EDIT ###"
@@ -1084,6 +1099,10 @@ function main() {
     configure_network
     declare -r configure_network_rc="${?}"
     [ "${configure_network_rc}" -ne 0 ] && return "${configure_network_rc}"
+
+    configure_grub
+    declare -r configure_grub_rc="${?}"
+    [ "${configure_grub_rc}" -ne 0 ] && return "${configure_grub_rc}"
 
     debloat
     declare -r debloat_rc="${?}"
