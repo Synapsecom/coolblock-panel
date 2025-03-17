@@ -878,7 +878,7 @@ function configure_sysctl() {
         echo "net.ipv6.conf.default.disable_ipv6 = 1"
         echo "net.ipv6.conf.lo.disable_ipv6 = 1"
     } > /etc/sysctl.conf
-    /usr/bin/sysctl -p /etc/sysctl.conf
+    /usr/sbin/sysctl -p /etc/sysctl.conf
 
     return 0
 }
