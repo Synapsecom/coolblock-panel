@@ -297,7 +297,7 @@ function install_kde() {
 
     echo -e "${c_cyan}>> Installing KDE (if not installed already) ..${c_rst}"
     /usr/bin/apt update
-    /usr/bin/apt install -y kubuntu-desktop xdg-utils qtvirtualkeyboard-plugin maliit-keyboard maliit-inputmethod-plugin plasma-wayland-protocols plasma-workspace-wayland plasma-mobile-tweaks
+    /usr/bin/apt install -y kubuntu-desktop xdg-utils qtvirtualkeyboard-plugin maliit-keyboard plasma-wayland-protocols plasma-workspace-wayland plasma-mobile-tweaks
 
     echo -e "${c_prpl}>> Configuring SDDM autologin ..${c_rst}"
     /usr/bin/mkdir -pv /etc/sddm.conf.d
