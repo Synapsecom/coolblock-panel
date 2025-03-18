@@ -372,12 +372,12 @@ function install_kde() {
     /usr/bin/chmod -v 0600 /home/coolblock/.config/kwinrc
 
     echo -e "${c_prpl}>> Changing taskbar icon ..${c_rst}"
-    download "https://downloads.coolblock.com/panel/logo.svg" "/home/coolblock/Pictures/logo.svg" coolblock
+    download "https://downloads.coolblock.com/panel/logo.svg" "/home/coolblock/logo.svg" coolblock
     if /usr/bin/grep -q '\[Containments\]\[2\]\[Applets\]\[3\]\[Configuration\]\[General\]' -A 5 /home/coolblock/.config/plasma-org.kde.plasma.desktop-appletsrc \
         | /usr/bin/grep -q '^icon='
     then
         /usr/bin/sed -i \
-            -e 's#^icon=.*#icon=/home/coolblock/Pictures/logo.svg#g' \
+            -e 's#^icon=.*#icon=/home/coolblock/logo.svg#g' \
             /home/coolblock/.config/plasma-org.kde.plasma.desktop-appletsrc
     else
         /usr/bin/sudo -u coolblock /usr/bin/sed '/^\[Containments\]\[2\]\[Applets\]\[3\]\[Configuration\]\[General\]$/,/^$/d' \
@@ -386,7 +386,7 @@ function install_kde() {
             echo ''
             echo '[Containments][2][Applets][3][Configuration][General]'
             echo 'favoritesPortedToKAstats=true'
-            echo 'icon=/home/coolblock/Pictures/logo.svg'
+            echo 'icon=/home/coolblock/logo.svg'
             echo 'systemFavorites=suspend\\,hibernate\\,reboot\\,shutdown'
             echo ''
         } >> /home/coolblock/.config/plasma-org.kde.plasma.desktop-appletsrc.new
@@ -395,8 +395,8 @@ function install_kde() {
     fi
 
     echo -e "${c_prpl}>> Setting brand wallpaper ..${c_rst}"
-    download "https://downloads.coolblock.com/panel/wallpaper.jpg" "/home/coolblock/Pictures/wallpaper.jpg" coolblock
-    /usr/bin/sudo -u coolblock /usr/bin/sed -i 's#^Image=.*$#Image=/home/coolblock/Pictures/wallpaper.jpg#g' /home/coolblock/.config/plasma-org.kde.plasma.desktop-appletsrc
+    download "https://downloads.coolblock.com/panel/wallpaper.jpg" "/home/coolblock/wallpaper.jpg" coolblock
+    /usr/bin/sudo -u coolblock /usr/bin/sed -i 's#^Image=.*$#Image=/home/coolblock/wallpaper.jpg#g' /home/coolblock/.config/plasma-org.kde.plasma.desktop-appletsrc
 
     echo -e "${c_prpl}>> Disabling screen blanking and power saving ..${c_rst}"
     {
