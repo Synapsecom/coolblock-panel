@@ -331,7 +331,7 @@ function install_kde() {
     } | /usr/bin/tee /etc/environment
 
     echo -e "${c_prpl}>> Preparing user namespace configuration directory ..${c_rst}"
-    /usr/bin/sudo -u coolblock /usr/bin/mkdir -pv /home/coolblock/.config /home/coolblock/.config/gtk-3.0 /home/coolblock/.config/gtk-4.0
+    /usr/bin/sudo -u coolblock /usr/bin/mkdir -pv /home/coolblock/.config /home/coolblock/.config/autostart /home/coolblock/.config/gtk-3.0 /home/coolblock/.config/gtk-4.0
 
     echo -e "${c_prpl}>> Customizing GTK ..${c_rst}"
     {
@@ -740,6 +740,30 @@ function install_kde() {
         echo 'itemsOnDisabledScreens='
         echo 'screenMapping='
     } | /usr/bin/sudo -u coolblock /usr/bin/tee /home/coolblock/.config/plasma-org.kde.plasma.desktop-appletsrc
+    {
+        echo '#! /usr/bin/env bash'
+        echo ''
+        echo "/usr/bin/qdbus org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.evaluateScript '"
+        echo '    var allDesktops = desktops();'
+        echo '    for (i=0;i<allDesktops.length;i++)'
+        echo '    {'
+        echo '        d = allDesktops[i];'
+        echo '        d.wallpaperPlugin = "org.kde.image";'
+        echo '        d.currentConfigGroup = Array("Wallpaper", "org.kde.image", "General");'
+        echo '        d.writeConfig("Image", "file:///home/coolblock/wallpaper.jpg")'
+        echo '    }'
+        echo "'"
+    } | /usr/bin/sudo -u coolblock /usr/bin/tee /home/coolblock/wallpaper.sh
+    /usr/bin/chmod -v 0750 /home/coolblock/wallpaper.sh
+    {
+        echo "[Desktop Entry]"
+        echo "Type=Application"
+        echo "Name=Coolblock Wallpaper"
+        echo "Comment=Coolblock Wallpaper"
+        echo "Exec=/home/coolblock/wallpaper.sh"
+        echo "X-GNOME-Autostart-enabled=true"
+        echo "Terminal=false"
+    } | /usr/bin/sudo -u coolblock /usr/bin/tee /home/coolblock/.config/autostart/coolblock-wallpaper.desktop
 
     echo -e "${c_prpl}>> Configuring KDE power management ..${c_rst}"
     {
@@ -966,7 +990,7 @@ function install_firefox() {
     fi
     /usr/bin/chmod -v 0750 "${pdir}/browser.sh"
 
-    /usr/bin/mkdir -pv /home/coolblock/.config/autostart
+    /usr/bin/sudo -u coolblock /usr/bin/mkdir -pv /home/coolblock/.config/autostart
     download "https://downloads.coolblock.com/panel/app.png" "/home/coolblock/app.png" coolblock
     echo -e "${c_prpl}>> Creating autostart entry for Mozilla Firefox in kiosk mode ..${c_rst}"
     {
