@@ -1306,12 +1306,10 @@ function configure_sysctl() {
         echo "net.ipv6.conf.default.disable_ipv6 = 1"
         echo "net.ipv6.conf.lo.disable_ipv6 = 1"
     } | /usr/bin/tee /etc/sysctl.conf
-    /usr/bin/sleep 1
     /usr/sbin/sysctl -p /etc/sysctl.conf
-    /usr/bin/sleep 1
-    /usr/sbin/sysctl -p /etc/sysctl.conf
-    /usr/bin/sleep 1
-    /usr/sbin/sysctl -p /etc/sysctl.conf
+    /usr/sbin/sysctl -w net.ipv6.conf.all.disable_ipv6=1
+    /usr/sbin/sysctl -w net.ipv6.conf.default.disable_ipv6=1
+    /usr/sbin/sysctl -w net.ipv6.conf.lo.disable_ipv6=1
 
     return 0
 }
