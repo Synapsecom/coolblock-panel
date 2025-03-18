@@ -589,6 +589,7 @@ function install_firefox() {
     /usr/bin/wget -q https://packages.mozilla.org/apt/repo-signing-key.gpg -O- \
         | /usr/bin/gpg --dearmor \
         | /usr/bin/tee /etc/apt/keyrings/packages.mozilla.org.gpg >/dev/null
+    /usr/bin/chmod 0644 /etc/apt/keyrings/packages.mozilla.org.gpg
     /usr/bin/rm -fv /etc/apt/keyrings/packages.mozilla.org.asc
 
     echo -e "${c_prpl}>> Setting up APT preferences for Mozilla Firefox ..${c_rst}"
