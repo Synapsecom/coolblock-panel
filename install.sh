@@ -322,83 +322,209 @@ function install_kde() {
         echo "[Autologin]"
         echo "User=coolblock"
         echo "Session=plasmawayland"
-    } > /etc/sddm.conf.d/autologin.conf
+    } | /usr/bin/tee /etc/sddm.conf.d/autologin.conf
+
+    echo -e "${c_prpl}>> Configuring shell environment ..${c_rst}"
+    {
+        echo 'PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin"'
+        echo 'QT_QUICK_CONTROLS_STYLE=org.kde.desktop'
+    } | /usr/bin/tee /etc/environment
 
     echo -e "${c_prpl}>> Preparing user namespace configuration directory ..${c_rst}"
     /usr/bin/sudo -u coolblock /usr/bin/mkdir -pv /home/coolblock/.config
 
-    echo -e "${c_prpl}>> Enabling virtual keyboard ..${c_rst}"
-    if /usr/bin/grep -q "InputMethod" /home/coolblock/.config/kwinrc \
-        && /usr/bin/grep -q "maliit" /home/coolblock/.config/kwinrc
-    then
-        /usr/bin/sudo -u coolblock /usr/bin/sed -i \
-            -e 's#^InputMethod\[$e\]=.*$#InputMethod[$e]=/usr/share/applications/com.github.maliit.keyboard.desktop#g' \
-            /home/coolblock/.config/kwinrc
-    else
-        {
-            echo ''
-            echo '[Wayland]'
-            echo 'InputMethod[$e]=/usr/share/applications/com.github.maliit.keyboard.desktop'
-            echo ''
-        } >> /home/coolblock/.config/kwinrc
-    fi
-    /usr/bin/chown -Rv coolblock:coolblock /home/coolblock/.config/kwinrc
-    /usr/bin/chmod -v 0600 /home/coolblock/.config/kwinrc
+    echo -e "${c_prpl}>> Customizing KDE Window Manager ..${c_rst}"
+    {
+        echo '[$Version]'
+        echo 'update_info=kwin.upd:replace-scalein-with-scale,kwin.upd:port-minimizeanimation-effect-to-js,kwin.upd:port-scale-effect-to-js,kwin.upd:port-dimscreen-effect-to-js,kwin.upd:auto-bordersize,kwin.upd:animation-speed,kwin.upd:desktop-grid-click-behavior,kwin.upd:no-swap-encourage,kwin.upd:make-translucency-effect-disabled-by-default,kwin.upd:remove-flip-switch-effect,kwin.upd:remove-cover-switch-effect,kwin.upd:remove-cubeslide-effect,kwin.upd:remove-xrender-backend,kwin.upd:enable-scale-effect-by-default,kwin.upd:overview-group-plugin-id,kwin.upd:animation-speed-cleanup,kwin.upd:replace-cascaded-zerocornered'
+        echo ''
+        echo '[Effect-desktopgrid]'
+        echo 'LayoutMode=1'
+        echo ''
+        echo '[Effect-presentwindows]'
+        echo 'LayoutMode=1'
+        echo ''
+        echo '[Wayland]'
+        echo 'InputMethod[$e]=/usr/share/applications/com.github.maliit.keyboard.desktop'
+        echo ''
+        echo '[Windows]'
+        echo 'ElectricBorderMaximize=false'
+        echo 'ElectricBorderTiling=false'
+        echo ''
+        echo '[Xwayland]'
+        echo 'Scale=1'
+    } | /usr/bin/sudo -u coolblock /usr/bin/tee /home/coolblock/.config/kwinrc
 
-    # make maliit keyboard follow system color scheme
-    if ! /usr/bin/grep -q QT_QUICK_CONTROLS_STYLE /etc/environment
-    then
-        echo 'QT_QUICK_CONTROLS_STYLE=org.kde.desktop' >> /etc/environment
-    fi
-
-    echo -e "${c_prpl}>> Disabling screen edges ..${c_rst}"
-    if /usr/bin/grep -q "ElectricBorderMaximize" /home/coolblock/.config/kwinrc \
-        && /usr/bin/grep -q "ElectricBorderTiling" /home/coolblock/.config/kwinrc
-    then
-        /usr/bin/sudo -u coolblock /usr/bin/sed -i \
-            -e 's#^ElectricBorderMaximize=.*$#ElectricBorderMaximize=false#g' \
-            -e 's#^ElectricBorderTiling=.*$#ElectricBorderTiling=false#g' \
-            /home/coolblock/.config/kwinrc
-    else
-        {
-            echo ''
-            echo '[Windows]'
-            echo 'ElectricBorderMaximize=false'
-            echo 'ElectricBorderTiling=false'
-            echo ''
-        } >> /home/coolblock/.config/kwinrc
-    fi
-    /usr/bin/chown -Rv coolblock:coolblock /home/coolblock/.config/kwinrc
-    /usr/bin/chmod -v 0600 /home/coolblock/.config/kwinrc
-
-    echo -e "${c_prpl}>> Changing taskbar icon ..${c_rst}"
+    echo -e "${c_prpl}>> Customizing KDE applet ..${c_rst}"
     download "https://downloads.coolblock.com/panel/logo.svg" "/home/coolblock/logo.svg" coolblock
-    if /usr/bin/grep -q '\[Containments\]\[2\]\[Applets\]\[3\]\[Configuration\]\[General\]' -A 5 /home/coolblock/.config/plasma-org.kde.plasma.desktop-appletsrc \
-        | /usr/bin/grep -q '^icon='
-    then
-        /usr/bin/sed -i \
-            -e 's#^icon=.*#icon=/home/coolblock/logo.svg#g' \
-            /home/coolblock/.config/plasma-org.kde.plasma.desktop-appletsrc
-    else
-        /usr/bin/sudo -u coolblock /usr/bin/sed '/^\[Containments\]\[2\]\[Applets\]\[3\]\[Configuration\]\[General\]$/,/^$/d' \
-            /home/coolblock/.config/plasma-org.kde.plasma.desktop-appletsrc > /home/coolblock/.config/plasma-org.kde.plasma.desktop-appletsrc.new
-        {
-            echo ''
-            echo '[Containments][2][Applets][3][Configuration][General]'
-            echo 'favoritesPortedToKAstats=true'
-            echo 'icon=/home/coolblock/logo.svg'
-            echo 'systemFavorites=suspend\\,hibernate\\,reboot\\,shutdown'
-            echo ''
-        } >> /home/coolblock/.config/plasma-org.kde.plasma.desktop-appletsrc.new
-        /usr/bin/sudo -u coolblock /usr/bin/cp -v /home/coolblock/.config/plasma-org.kde.plasma.desktop-appletsrc.new /home/coolblock/.config/plasma-org.kde.plasma.desktop-appletsrc
-        /usr/bin/rm -fv /home/coolblock/.config/plasma-org.kde.plasma.desktop-appletsrc.new
-    fi
-
-    echo -e "${c_prpl}>> Setting brand wallpaper ..${c_rst}"
     download "https://downloads.coolblock.com/panel/wallpaper.jpg" "/home/coolblock/wallpaper.jpg" coolblock
-    /usr/bin/sudo -u coolblock /usr/bin/sed -i 's#^Image=.*$#Image=/home/coolblock/wallpaper.jpg#g' /home/coolblock/.config/plasma-org.kde.plasma.desktop-appletsrc
+    {
+        echo '[ActionPlugins][0]'
+        echo 'RightButton;NoModifier=org.kde.contextmenu'
+        echo 'wheel:Vertical;NoModifier=org.kde.switchdesktop'
+        echo ''
+        echo '[ActionPlugins][1]'
+        echo 'RightButton;NoModifier=org.kde.contextmenu'
+        echo ''
+        echo '[Containments][1]'
+        echo 'ItemGeometries-1024x768='
+        echo 'ItemGeometriesHorizontal='
+        echo 'activityId=b462267a-270f-45b4-8122-14b96ec5a40b'
+        echo 'formfactor=0'
+        echo 'immutability=1'
+        echo 'lastScreen=0'
+        echo 'location=0'
+        echo 'plugin=org.kde.plasma.folder'
+        echo 'wallpaperplugin=org.kde.image'
+        echo ''
+        echo '[Containments][1][ConfigDialog]'
+        echo 'DialogHeight=540'
+        echo 'DialogWidth=720'
+        echo ''
+        echo '[Containments][1][General]'
+        echo 'filterMimeTypes=\\0'
+        echo 'iconSize=5'
+        echo ''
+        echo '[Containments][1][Wallpaper][org.kde.image][General]'
+        echo 'Image=/home/coolblock/wallpaper.jpg'
+        echo 'SlidePaths=/usr/share/wallpapers/'
+        echo ''
+        echo '[Containments][2]'
+        echo 'activityId='
+        echo 'formfactor=2'
+        echo 'immutability=1'
+        echo 'lastScreen=0'
+        echo 'location=4'
+        echo 'plugin=org.kde.panel'
+        echo 'wallpaperplugin=org.kde.image'
+        echo ''
+        echo '[Containments][2][Applets][19]'
+        echo 'immutability=1'
+        echo 'plugin=org.kde.plasma.digitalclock'
+        echo ''
+        echo '[Containments][2][Applets][20]'
+        echo 'immutability=1'
+        echo 'plugin=org.kde.plasma.showdesktop'
+        echo ''
+        echo '[Containments][2][Applets][3]'
+        echo 'immutability=1'
+        echo 'plugin=org.kde.plasma.kickoff'
+        echo ''
+        echo '[Containments][2][Applets][3][Configuration]'
+        echo 'PreloadWeight=100'
+        echo 'popupHeight=514'
+        echo 'popupWidth=651'
+        echo ''
+        echo '[Containments][2][Applets][3][Configuration][ConfigDialog]'
+        echo 'DialogHeight=378'
+        echo 'DialogWidth=720'
+        echo ''
+        echo '[Containments][2][Applets][3][Configuration][General]'
+        echo 'favoritesPortedToKAstats=true'
+        echo 'icon=/home/coolblock/logo.svg'
+        echo 'menuLabel=COOLBLOCK'
+        echo 'systemFavorites=suspend\\,hibernate\\,reboot\\,shutdown'
+        echo ''
+        echo '[Containments][2][Applets][3][Configuration][Shortcuts]'
+        echo 'global=Alt+F1'
+        echo ''
+        echo '[Containments][2][Applets][3][Shortcuts]'
+        echo 'global=Alt+F1'
+        echo ''
+        echo '[Containments][2][Applets][4]'
+        echo 'immutability=1'
+        echo 'plugin=org.kde.plasma.pager'
+        echo ''
+        echo '[Containments][2][Applets][5]'
+        echo 'immutability=1'
+        echo 'plugin=org.kde.plasma.icontasks'
+        echo ''
+        echo '[Containments][2][Applets][5][Configuration][General]'
+        echo 'launchers=applications:systemsettings.desktop'
+        echo ''
+        echo '[Containments][2][Applets][6]'
+        echo 'immutability=1'
+        echo 'plugin=org.kde.plasma.marginsseparator'
+        echo ''
+        echo '[Containments][2][Applets][7]'
+        echo 'immutability=1'
+        echo 'plugin=org.kde.plasma.systemtray'
+        echo ''
+        echo '[Containments][2][Applets][7][Configuration]'
+        echo 'PreloadWeight=70'
+        echo 'SystrayContainmentId=8'
+        echo ''
+        echo '[Containments][2][General]'
+        echo 'AppletOrder=3;4;5;6;7;19;20'
+        echo ''
+        echo '[Containments][8]'
+        echo 'activityId='
+        echo 'formfactor=2'
+        echo 'immutability=1'
+        echo 'lastScreen=0'
+        echo 'location=4'
+        echo 'plugin=org.kde.plasma.private.systemtray'
+        echo 'popupHeight=432'
+        echo 'popupWidth=432'
+        echo 'wallpaperplugin=org.kde.image'
+        echo ''
+        echo '[Containments][8][Applets][10][Configuration]'
+        echo 'PreloadWeight=42'
+        echo ''
+        echo '[Containments][8][Applets][11][Configuration]'
+        echo 'PreloadWeight=42'
+        echo ''
+        echo '[Containments][8][Applets][12][Configuration]'
+        echo 'PreloadWeight=42'
+        echo ''
+        echo '[Containments][8][Applets][13][Configuration]'
+        echo 'PreloadWeight=42'
+        echo ''
+        echo '[Containments][8][Applets][14][Configuration]'
+        echo 'PreloadWeight=42'
+        echo ''
+        echo '[Containments][8][Applets][15][Configuration]'
+        echo 'PreloadWeight=42'
+        echo ''
+        echo '[Containments][8][Applets][16][Configuration]'
+        echo 'PreloadWeight=42'
+        echo ''
+        echo '[Containments][8][Applets][17][Configuration]'
+        echo 'PreloadWeight=42'
+        echo ''
+        echo '[Containments][8][Applets][18][Configuration]'
+        echo 'PreloadWeight=42'
+        echo ''
+        echo '[Containments][8][Applets][21][Configuration]'
+        echo 'PreloadWeight=42'
+        echo ''
+        echo '[Containments][8][Applets][22][Configuration]'
+        echo 'PreloadWeight=42'
+        echo ''
+        echo '[Containments][8][Applets][23]'
+        echo 'immutability=1'
+        echo 'plugin=org.kde.plasma.networkmanagement'
+        echo ''
+        echo '[Containments][8][Applets][9][Configuration]'
+        echo 'PreloadWeight=42'
+        echo ''
+        echo '[Containments][8][ConfigDialog]'
+        echo 'DialogHeight=540'
+        echo 'DialogWidth=720'
+        echo ''
+        echo '[Containments][8][General]'
+        echo 'extraItems=org.kde.plasma.networkmanagement'
+        echo 'iconSpacing=6'
+        echo 'knownItems=org.kde.plasma.bluetooth,org.kde.kupapplet,org.kde.plasma.volume,org.kde.plasma.networkmanagement,org.kde.plasma.keyboardindicator,org.kde.plasma.nightcolorcontrol,org.kde.plasma.manage-inputmethod,org.kde.plasma.devicenotifier,org.kde.plasma.vault,org.kde.plasma.keyboardlayout,org.kde.plasma.clipboard,org.kde.plasma.mediacontroller,org.kde.plasma.notifications,org.kde.plasma.battery,org.kde.plasma.printmanager,org.kde.kscreen'
+        echo 'scaleIconsToFit=true'
+        echo 'shownItems=org.kde.plasma.networkmanagement'
+        echo ''
+        echo '[ScreenMapping]'
+        echo 'itemsOnDisabledScreens='
+        echo 'screenMapping='
+    } | /usr/bin/sudo -u coolblock /usr/bin/tee /home/coolblock/.config/plasma-org.kde.plasma.desktop-appletsrc
 
-    echo -e "${c_prpl}>> Disabling screen blanking and power saving ..${c_rst}"
+    echo -e "${c_prpl}>> Configuring KDE power management ..${c_rst}"
     {
         echo '[AC]'
         echo 'icon=battery-charging'
@@ -448,22 +574,20 @@ function install_kde() {
         echo 'idleTime=300000'
         echo 'suspendThenHibernate=false'
         echo 'suspendType=1'
-    } > /home/coolblock/.config/powermanagementprofilesrc
-    /usr/bin/chown -Rv coolblock:coolblock /home/coolblock/.config/powermanagementprofilesrc
-    /usr/bin/chmod -v 0600 /home/coolblock/.config/powermanagementprofilesrc
+    } | /usr/bin/sudo -u coolblock /usr/bin/tee /home/coolblock/.config/powermanagementprofilesrc
 
-    echo -e "${c_prpl}>> Disabling screen locking ..${c_rst}"
+    echo -e "${c_prpl}>> Configuring KDE screen locker ..${c_rst}"
     {
         echo '[Daemon]'
         echo 'Autolock=false'
         echo 'LockOnResume=false'
-    } > /home/coolblock/.config/kscreenlockerrc
-    /usr/bin/chown -v coolblock:coolblock /home/coolblock/.config/kscreenlockerrc
+    } | /usr/bin/sudo -u coolblock /usr/bin/tee /home/coolblock/.config/kscreenlockerrc
 
-    echo -e "${c_prpl}>> Disabling KDE welcome screen ..${c_rst}"
-    /usr/bin/sed -i 's/^ShouldShow=.*/ShouldShow=false/g' /home/coolblock/.config/plasma-welcomerc
-    /usr/bin/chmod -v 0600 /home/coolblock/.config/plasma-welcomerc
-    /usr/bin/chown -v coolblock:coolblock /home/coolblock/.config/plasma-welcomerc
+    echo -e "${c_prpl}>> Configuring KDE welcome screen ..${c_rst}"
+    {
+        echo '[General]'
+        echo 'ShouldShow=false'
+    } | /usr/bin/sudo -u coolblock /usr/bin/tee /home/coolblock/.config/plasma-welcomerc
 
     return 0
 }
@@ -597,7 +721,7 @@ function install_firefox() {
         echo "Package: firefox*"
         echo "Pin: origin packages.mozilla.org"
         echo "Pin-Priority: 1001"
-    } > /etc/apt/preferences.d/mozilla
+    } | /usr/bin/tee /etc/apt/preferences.d/mozilla
 
     echo -e "${c_prpl}>> Setting up APT sources for Mozilla Firefox ..${c_rst}"
     {
@@ -606,12 +730,12 @@ function install_firefox() {
         echo "Suites: mozilla"
         echo "Components: main"
         echo "Signed-By: /etc/apt/keyrings/packages.mozilla.org.gpg"
-    } > /etc/apt/sources.list.d/mozilla.sources
+    } | /usr/bin/tee /etc/apt/sources.list.d/mozilla.sources
 
     echo -e "${c_prpl}>> Setting up APT unattended upgrades for Mozilla Firefox ..${c_rst}"
     {
         echo 'Unattended-Upgrade::Origins-Pattern { "archive=mozilla"; };'
-    } > /etc/apt/apt.conf.d/51unattended-upgrades-firefox
+    } | /usr/bin/tee /etc/apt/apt.conf.d/51unattended-upgrades-firefox
 
     echo -e "${c_cyan}>> Installing Mozilla Firefox (if not installed already) ..${c_rst}"
     /usr/bin/apt update
@@ -633,8 +757,7 @@ function install_firefox() {
         echo "Name=Coolblock Browser - Mozilla Firefox"
         echo "Exec=/home/coolblock/panel/browser.sh firefox"
         echo "X-GNOME-Autostart-enabled=true"
-    } > /home/coolblock/.config/autostart/coolblock-browser.desktop
-    /usr/bin/chown -Rv coolblock:coolblock /home/coolblock/.config/autostart
+    } | /usr/bin/sudo -u coolblock /usr/bin/tee /home/coolblock/.config/autostart/coolblock-browser.desktop
 
     echo -e "${c_prpl}>> Creating Mozilla Firefox policies (based on https://github.com/mozilla/policy-templates/blob/master/linux/policies.json) ..${c_rst}"
     /usr/bin/mkdir -pv /etc/firefox/policies
@@ -684,7 +807,7 @@ function install_firefox() {
         echo '        }'
         echo '    }'
         echo '}'
-    } > /etc/firefox/policies/policies.json
+    } | /usr/bin/tee /etc/firefox/policies/policies.json
     /usr/bin/chmod -Rv a=rx /etc/firefox
     /usr/bin/chmod -v a-x /etc/firefox/policies/policies.json
 
@@ -850,9 +973,8 @@ function install_panel() {
         echo "password=${mysql_root_password}"
         echo "host=localhost"
         echo "protocol=tcp"
-    } > /home/coolblock/.my.cnf
-    /usr/bin/chown -v coolblock:coolblock /home/coolblock/.my.cnf
-    /usr/bin/chmod -v 0400 /home/coolblock/.my.cnf
+    } | /usr/bin/sudo -u coolblock /usr/bin/tee /home/coolblock/.my.cnf
+    /usr/bin/chmod -v 0600 /home/coolblock/.my.cnf
 
     echo -e "${c_prpl}>> Patching mysql database and restoring users (if applicable) ..${c_rst}"
     if [[ -f "${pdir}/backup/coolblock-panel.sql" && -f "${pdir}/backup/coolblock-panel_users.sql" ]]
@@ -902,7 +1024,7 @@ function install_panel() {
         echo ""
         echo "[Install]"
         echo "WantedBy=multi-user.target"
-    } > /etc/systemd/system/coolblock-panel.service
+    } | /usr/bin/tee /etc/systemd/system/coolblock-panel.service
     # fixes "is marked world-inaccessible" systemd log spam
     /usr/bin/chmod 0644 /etc/systemd/system/coolblock-panel.service
 
@@ -938,7 +1060,7 @@ function configure_sysctl() {
         echo "net.ipv6.conf.all.disable_ipv6 = 1"
         echo "net.ipv6.conf.default.disable_ipv6 = 1"
         echo "net.ipv6.conf.lo.disable_ipv6 = 1"
-    } > /etc/sysctl.conf
+    } | /usr/bin/tee /etc/sysctl.conf
     /usr/bin/sleep 1
     /usr/sbin/sysctl -p /etc/sysctl.conf
     /usr/bin/sleep 1
@@ -973,7 +1095,7 @@ function configure_network() {
             echo "      addresses:"
             echo "        - 1.1.1.1"
             echo "        - 1.0.0.1"
-        } > /etc/netplan/99-coolblock.yaml
+        } | /usr/bin/tee /etc/netplan/99-coolblock.yaml
     else
         echo -e "${c_ylw}>> Skipping network configuration (CONFIGURE_NETWORK=no) ..${c_rst}"
     fi
@@ -996,7 +1118,7 @@ function configure_crons() {
         echo "# Coolblock Panel - Crons"
         echo "### DO NOT EDIT ###"
         echo "*/5 * * * * /bin/bash ${pdir}/housekeeping.sh --"
-    } > "${cron_housekeeping_file}"
+    } | /usr/bin/tee "${cron_housekeeping_file}"
     /usr/bin/crontab "${cron_housekeeping_file}"
     /usr/bin/rm -fv "${cron_housekeeping_file}"
 
@@ -1048,7 +1170,7 @@ function debloat() {
         echo "blacklist snd_hwdep"
         echo "blacklist snd_timer"
         echo "blacklist pcspkr"
-    } > /etc/modprobe.d/coolblock-blacklist.conf
+    } | /usr/bin/tee /etc/modprobe.d/coolblock-blacklist.conf
 
     echo -e "${c_prpl}>> Uninstalling unnecessary APT packages ..${c_rst}"
     /usr/bin/apt remove -y --purge \
