@@ -1098,23 +1098,23 @@ function install_panel() {
     if [ -f "${pdir}/docker-compose.yml" ]
     then
         /usr/bin/systemctl stop coolblock-panel.service
-        /usr/bin/docker compose -f "${pdir}/docker-compose.yml" down
+        /bin/bash -c "cd ${pdir} && /usr/bin/docker compose -f ${pdir}/docker-compose.yml down"
     fi
 
     echo -e "${c_prpl}>> Generating certificates (if not already) ..${c_rst}"
     if [ -f "${pdir}/docker-compose.yml" ]
     then
-        /usr/bin/sudo -u coolblock /usr/bin/docker compose -f "${pdir}/docker-compose.yml" pull proxy
-        /usr/bin/sudo -u coolblock /usr/bin/docker compose -f "${pdir}/docker-compose.yml" up -d proxy
-        /usr/bin/timeout 5 /usr/bin/docker compose -f "${pdir}/docker-compose.yml" logs -f proxy || /usr/bin/true
-        /usr/bin/docker compose -f "${pdir}/docker-compose.yml" down proxy
+        /usr/bin/sudo -u coolblock /bin/bash -c "cd ${pdir} && /usr/bin/docker compose -f ${pdir}/docker-compose.yml pull proxy"
+        /usr/bin/sudo -u coolblock /bin/bash -c "cd ${pdir} && /usr/bin/docker compose -f ${pdir}/docker-compose.yml up -d proxy"
+        /usr/bin/timeout 5 /bin/bash -c "cd ${pdir} && /usr/bin/docker compose -f ${pdir}/docker-compose.yml logs -f proxy" || /usr/bin/true
+        /bin/bash -c "cd ${pdir} && /usr/bin/docker compose -f ${pdir}/docker-compose.yml down proxy"
     fi
 
     echo -e "${c_prpl}>> Backing up mysql database (if available) ..${c_rst}"
     if [[ -f "/home/coolblock/.my.cnf" && -f "${pdir}/docker-compose.yml" ]]
     then
-        /usr/bin/sudo -u coolblock /usr/bin/docker compose -f "${pdir}/docker-compose.yml" pull mysql
-        /usr/bin/sudo -u coolblock /usr/bin/docker compose -f "${pdir}/docker-compose.yml" up -d mysql
+        /usr/bin/sudo -u coolblock /bin/bash -c "cd ${pdir} && /usr/bin/docker compose -f ${pdir}/docker-compose.yml pull mysql"
+        /usr/bin/sudo -u coolblock /bin/bash -c "cd ${pdir} && /usr/bin/docker compose -f ${pdir}/docker-compose.yml up -d mysql"
         echo -e "${c_ylw}>> Waiting for mysql database ..${c_rst}"
         while /usr/bin/true
         do
@@ -1138,7 +1138,7 @@ function install_panel() {
     if [ -f "${pdir}/docker-compose.yml" ]
     then
         /usr/bin/systemctl stop coolblock-panel.service
-        /usr/bin/docker compose -f "${pdir}/docker-compose.yml" down
+        /bin/bash -c "cd ${pdir} && /usr/bin/docker compose -f ${pdir}/docker-compose.yml down"
     fi
 
     echo -e "${c_prpl}>> Downloading Docker deployment file ..${c_rst}"
@@ -1158,7 +1158,7 @@ function install_panel() {
     echo -e "${c_prpl}>> Pulling Docker images (if available) ..${c_rst}"
     if [ -f "${pdir}/.env" ]
     then
-        /usr/bin/sudo -u coolblock /usr/bin/docker compose -f "${pdir}/docker-compose.yml" pull
+        /usr/bin/sudo -u coolblock /bin/bash -c "cd ${pdir} && /usr/bin/docker compose -f ${pdir}/docker-compose.yml pull"
     fi
 
     echo -e "${c_prpl}>> Backing up existing environment file (if available).. ${c_rst}"
@@ -1224,9 +1224,9 @@ function install_panel() {
     echo -e "${c_prpl}>> Patching mysql database and restoring users (if applicable) ..${c_rst}"
     if [[ -f "${pdir}/backup/coolblock-panel.sql" && -f "${pdir}/backup/coolblock-panel_users.sql" ]]
     then
-        /usr/bin/docker compose -f "${pdir}/docker-compose.yml" down mysql
+        /bin/bash -c "cd ${pdir} && /usr/bin/docker compose -f ${pdir}/docker-compose.yml down mysql"
         /usr/bin/docker volume rm panel_coolblock-panel-web-database-data
-        /usr/bin/sudo -u coolblock /usr/bin/docker compose -f "${pdir}/docker-compose.yml" up -d mysql
+        /usr/bin/sudo -u coolblock /bin/bash -c "cd ${pdir} && /usr/bin/docker compose -f ${pdir}/docker-compose.yml up -d mysql"
 
         echo -e "${c_ylw}>> Waiting for mysql database ..${c_rst}"
         while /usr/bin/true
@@ -1238,13 +1238,13 @@ function install_panel() {
 
         /usr/bin/sudo -u coolblock /usr/bin/mysql --defaults-file=/home/coolblock/.my.cnf coolblock-panel < "${pdir}/backup/coolblock-panel_users.sql"
         /usr/bin/systemctl stop coolblock-panel.service
-        /usr/bin/docker compose -f "${pdir}/docker-compose.yml" down
+        /bin/bash -c "cd ${pdir} && /usr/bin/docker compose -f ${pdir}/docker-compose.yml down"
     fi
 
     echo -e "${c_prpl}>> Initializing database (if applicable) ..${c_rst}"
     if ! /usr/bin/docker volume ls | /usr/bin/grep panel_coolblock-panel-web-database-data
     then
-        /usr/bin/sudo -u coolblock /usr/bin/docker compose -f "${pdir}/docker-compose.yml" up -d mysql
+        /usr/bin/sudo -u coolblock /bin/bash -c "cd ${pdir} && /usr/bin/docker compose -f ${pdir}/docker-compose.yml up -d mysql"
         while ! /usr/bin/docker ps | /usr/bin/grep "(healthy)"
         do
             echo -e "${c_ylw}>> Waiting for database to become healthy .."
