@@ -1,7 +1,7 @@
 <header>
   <span style="display: inline-flex; align-items: center;">
     <img src="https://cdn.coolblock.com/coolblock.svg" width="48" height="48" style="margin-right: 5px;">
-    <h1>COOLBLOCK - BIOS Configuration - Beelink Mini S12 Pro</S></h1>
+    <h1>COOLBLOCK - BIOS Configuration - Beelink Mini S12 Pro</h1>
   </span>
 </header>
 
