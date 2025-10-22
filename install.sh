@@ -1241,7 +1241,7 @@ function install_panel() {
         mysql_root_password=$(generate_password 16 | /usr/bin/tr -d '\n')
         influxdb_password=$(generate_password 16 | /usr/bin/tr -d '\n')
         influxdb_token=$(generate_password 32 | /usr/bin/tr -d '\n')
-        ziti_jwt="needs-reenrollment-contact-your-administrator"
+        ziti_jwt="${tunnel_jwt}"
     fi
 
     echo -e "${c_prpl}>> Downloading environment file ..${c_rst}"
@@ -1346,7 +1346,7 @@ function configure_grub() {
 
     echo -e "${c_prpl}>> Configuring GRUB ..${c_rst}"
     /usr/bin/sed -i \
-        -e 's#^GRUB_CMDLINE_LINUX_DEFAULT=.*$#GRUB_CMDLINE_LINUX_DEFAULT="quiet splash ipv6.disable=1 ipv6.disable_ipv6=1"#g' \
+        -e 's#^GRUB_CMDLINE_LINUX_DEFAULT=.*$#GRUB_CMDLINE_LINUX_DEFAULT="quiet splash ipv6.disable=1 ipv6.disable_ipv6=1 net.ifnames=0 biosdevname=0"#g' \
         /etc/default/grub
 
     if ! /usr/sbin/update-grub
@@ -1386,20 +1386,21 @@ function configure_network() {
         {
             echo "# Coolblock Panel - Network"
             echo "### DO NOT EDIT ###"
+            echo "---"
             echo "network:"
-            echo "version: 2"
-            echo "renderer: networkd"
-            echo "ethernets:"
-            echo "  enp1s0:"
-            echo "    addresses:"
-            echo "      - 10.13.37.41/24"
-            echo "    routes:"
-            echo "      - to: default"
-            echo "        via: 10.13.37.1"
-            echo "    nameservers:"
+            echo "  version: 2"
+            echo "  renderer: networkd"
+            echo "  ethernets:"
+            echo "    eth0:"
             echo "      addresses:"
-            echo "        - 1.1.1.1"
-            echo "        - 1.0.0.1"
+            echo "        - 10.13.37.41/24"
+            echo "      routes:"
+            echo "        - to: default"
+            echo "          via: 10.13.37.1"
+            echo "      nameservers:"
+            echo "        addresses:"
+            echo "          - 1.1.1.1"
+            echo "          - 1.0.0.1"
         } | /usr/bin/tee /etc/netplan/99-coolblock.yaml
     else
         echo -e "${c_ylw}>> Skipping network configuration (CONFIGURE_NETWORK=no) ..${c_rst}"
