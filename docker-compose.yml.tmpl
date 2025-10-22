@@ -483,18 +483,14 @@ services:
 
   tunnel:
     image: "registry.coolblock.com/coolblock/tunnel:latest"
-    environment:
-      TUNNEL_IDENTITY: "${TUNNEL_IDENTITY:-}"
-      TUNNEL_JWT: "${TUNNEL_JWT:-}"
-      VERBOSE: "${VERBOSE:-0}"
-      DEBUG: "${DEBUG:-0}"
+    env_file:
+      - '.env'
     volumes:
       - "coolblock-panel-tunnel-data:/ziti-edge-tunnel"
     deploy:
-      mode: "replicated"
-      replicas: "1"
+      replicas: 1
       restart_policy:
-        condition: "any"
+        condition: 'any'
     network_mode: 'host'
 
 volumes:
