@@ -76,7 +76,7 @@ services:
 
   mysql:
     image: 'mysql:9'
-    command: 'command: --event-scheduler=ON'
+    command: '--event-scheduler=ON'
     env_file:
       - '.env'
     volumes:
