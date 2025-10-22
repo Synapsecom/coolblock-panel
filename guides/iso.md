@@ -1,7 +1,7 @@
 <header>
   <span style="display: inline-flex; align-items: center;">
-    <img src="assets/coolblock-logo.svg" width="48" height="48" style="margin-right: 5px;">
-    <h1>COOLBLOCK - Ubuntu 24.04.2 LTS installation with ISO</h1>
+    <img src="https://cdn.coolblock.com/coolblock.svg" width="48" height="48" style="margin-right: 5px;">
+    <h1>COOLBLOCK - OS Installation - Ubuntu 24.04 LTS</h1>
   </span>
 </header>
 

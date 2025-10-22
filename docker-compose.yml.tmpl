@@ -19,7 +19,11 @@ services:
       # - '--entrypoints.backend.address=:8443'  ## uncomment this to expose internal API (insecure)
     ports:
       - '80:80'
-      - '443:443'
+      - '10080:80'
+      - '443:443/tcp'
+      - '443:443/udp'
+      - '10443:443/tcp'
+      - '10443:443/udp'
       - '8086:8086'
       # - '8443:8443'  ## uncomment this to expose internal API (insecure)
     volumes:
@@ -72,6 +76,7 @@ services:
 
   mysql:
     image: 'mysql:9'
+    command: 'command: --event-scheduler=ON'
     env_file:
       - '.env'
     volumes:
@@ -305,6 +310,96 @@ services:
     networks:
       - 'coolblock-panel'
 
+  worker-alert-checker:
+    image: 'registry.coolblock.com/coolblock/panel-api:__PANEL_API_VERSION__'
+    command:
+      [
+        'celery',
+        '-A',
+        'app.tasks.celery_app.celery_app',
+        'worker',
+        '--loglevel=info',
+        '--concurrency=1',
+        '-E',
+        '-Q',
+        'alert.checker'
+      ]
+    env_file:
+      - '.env'
+    depends_on:
+      mysql:
+        condition: 'service_healthy'
+      influxdb:
+        condition: 'service_healthy'
+      redis:
+        condition: 'service_healthy'
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'celery',
+          'inspect',
+          'ping',
+          '--destination',
+          'celery@$$HOSTNAME',
+        ]
+      interval: '30s'
+      timeout: '5s'
+      retries: 3
+      start_period: '0s'
+      start_interval: '5s'
+    deploy:
+      replicas: 3
+      restart_policy:
+        condition: 'on-failure'
+    networks:
+      - 'coolblock-panel'
+
+  worker-alert-notifier:
+    image: 'registry.coolblock.com/coolblock/panel-api:__PANEL_API_VERSION__'
+    command:
+      [
+        'celery',
+        '-A',
+        'app.tasks.celery_app.celery_app',
+        'worker',
+        '--loglevel=info',
+        '--concurrency=1',
+        '-E',
+        '-Q',
+        'alert.notifier'
+      ]
+    env_file:
+      - '.env'
+    depends_on:
+      mysql:
+        condition: 'service_healthy'
+      influxdb:
+        condition: 'service_healthy'
+      redis:
+        condition: 'service_healthy'
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'celery',
+          'inspect',
+          'ping',
+          '--destination',
+          'celery@$$HOSTNAME',
+        ]
+      interval: '30s'
+      timeout: '5s'
+      retries: 3
+      start_period: '0s'
+      start_interval: '5s'
+    deploy:
+      replicas: 3
+      restart_policy:
+        condition: 'on-failure'
+    networks:
+      - 'coolblock-panel'
+
   scheduler:
     image: 'registry.coolblock.com/coolblock/panel-api:__PANEL_API_VERSION__'
     command:
@@ -386,8 +481,25 @@ services:
     networks:
       - 'coolblock-panel'
 
+  tunnel:
+    image: "registry.coolblock.com/coolblock/tunnel:latest"
+    environment:
+      TUNNEL_IDENTITY: "${TUNNEL_IDENTITY:-}"
+      TUNNEL_JWT: "${TUNNEL_JWT:-}"
+      VERBOSE: "${VERBOSE:-0}"
+      DEBUG: "${DEBUG:-0}"
+    volumes:
+      - "coolblock-panel-tunnel-data:/ziti-edge-tunnel"
+    deploy:
+      mode: "replicated"
+      replicas: "1"
+      restart_policy:
+        condition: "any"
+    network_mode: 'host'
+
 volumes:
   coolblock-panel-web-database-data:
+  coolblock-panel-tunnel-data:
 
 networks:
   coolblock-panel:

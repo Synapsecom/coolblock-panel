@@ -12,6 +12,8 @@ declare -r c_grn='\033[01;32m'
 declare -r c_ylw='\033[01;33m'
 declare -r c_prpl='\033[01;35m'
 declare -r c_cyan='\033[01;36m'
+declare -r c_bold='\033[1m'
+declare -r c_dim='\033[2m'
 
 declare -r docker_registry="registry.coolblock.com"
 declare -Ar docker_images=(
@@ -30,20 +32,66 @@ declare tank_model=""
 declare plc_model=""
 declare serial_number=""
 declare license_key=""
+declare tunnel_jwt=""
+declare is_headless="false"
 
 
 function usage() {
+    local script_name=$(basename "${0}")
 
+    # Header
     echo
-    echo -e "Usage: ${0} --tank-model <tank_model> --plc-model <plc_model> --serial-number <serial_number> --license-key <license_key> [--web-version <web_version>] [--api-version <api_version>] [--proxy-version <proxy_version>]"
+    echo -e "${c_cyan}╔══════════════════════════════════════════════════════════╗${c_rst}"
+    echo -e "${c_cyan}║${c_rst}            ${c_bold}Coolblock Tank Installation${c_rst}                   ${c_cyan}║${c_rst}"
+    echo -e "${c_cyan}╚══════════════════════════════════════════════════════════╝${c_rst}"
     echo
-    echo -e "  --tank-model     ${c_red}Required${c_rst} e.g. x520"
-    echo -e "  --plc-model      ${c_red}Required${c_rst} e.g. 'Vendor S7'"
-    echo -e "  --serial-number  ${c_red}Required${c_rst} e.g. 874623bc72954"
-    echo -e "  --license-key    ${c_red}Required${c_rst} e.g. snc-git-1234567890qwerty"
-    echo -e "  --web-version    ${c_ylw}Optional${c_rst} Defaults to '${c_cyan}latest${c_rst}'"
-    echo -e "  --api-version    ${c_ylw}Optional${c_rst} Defaults to '${c_cyan}latest${c_rst}'"
-    echo -e "  --proxy-version  ${c_ylw}Optional${c_rst} Defaults to '${c_cyan}latest${c_rst}'"
+
+    # Usage line
+    echo -e "${c_bold}USAGE${c_rst}"
+    echo -e "  ${script_name} ${c_grn}[OPTIONS]${c_rst}"
+    echo
+
+    # Required arguments section
+    echo -e "${c_bold}REQUIRED ARGUMENTS${c_rst}"
+    echo -e "  ${c_ylw}--tank-model${c_rst} ${c_grn}<model>${c_rst}"
+    echo -e "      Tank model identifier (e.g., x520)"
+    echo
+    echo -e "  ${c_ylw}--plc-model${c_rst} ${c_grn}<model>${c_rst}"
+    echo -e "      PLC model (e.g., 'Vendor S7')"
+    echo
+    echo -e "  ${c_ylw}--serial-number${c_rst} ${c_grn}<uuid>${c_rst}"
+    echo -e "      Unique UUID-formatted tank serial (e.g., 46dbd654-af57-11f0-b582-dbe46ff98f6d)"
+    echo
+    echo -e "  ${c_ylw}--license-key${c_rst} ${c_grn}<token>${c_rst}"
+    echo -e "      Docker registry access token (e.g., snc-git-1234567890qwerty)"
+    echo
+    echo -e "  ${c_ylw}--tunnel-jwt${c_rst} ${c_grn}<jwt>${c_rst}"
+    echo -e "      Zero-Trust JWT token required for telemetry"
+    echo -e "      (e.g., eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkw...)"
+    echo
+
+    # Optional arguments section
+    echo -e "${c_bold}OPTIONAL ARGUMENTS${c_rst}"
+    echo -e "  ${c_ylw}--headless${c_rst}"
+    echo -e "      For installations without physical touch panel monitor"
+    echo
+    echo -e "  ${c_ylw}--web-version${c_rst} ${c_grn}[latest|dev|x.x.x]${c_rst}  ${c_dim}(default: ${c_cyan}latest${c_dim})${c_rst}"
+    echo -e "      Web component version"
+    echo
+    echo -e "  ${c_ylw}--api-version${c_rst} ${c_grn}[latest|dev|x.x.x]${c_rst}  ${c_dim}(default: ${c_cyan}latest${c_dim})${c_rst}"
+    echo -e "      API component version"
+    echo
+    echo -e "  ${c_ylw}--proxy-version${c_rst} ${c_grn}[latest|dev|x.x.x]${c_rst}  ${c_dim}(default: ${c_cyan}latest${c_dim})${c_rst}"
+    echo -e "      Proxy component version"
+    echo
+
+    # Example section
+    echo -e "${c_bold}EXAMPLE${c_rst}"
+    echo -e "  ${c_dim}\$${c_rst} ${script_name} ${c_ylw}--tank-model${c_rst} x520 ${c_ylw}--plc-model${c_rst} 'Vendor S7' \\"
+    echo -e "      ${c_ylw}--serial-number${c_rst} 46dbd654-af57-11f0-b582-dbe46ff98f6d \\"
+    echo -e "      ${c_ylw}--license-key${c_rst} snc-git-xxxxx \\"
+    echo -e "      ${c_ylw}--tunnel-jwt${c_rst} eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0... \\"
+    echo -e "      ${c_ylw}--headless${c_rst}"
     echo
 }
 
@@ -80,6 +128,15 @@ function check_arguments() {
                 license_key="${1}"
                 shift
                 ;;
+            --tunnel-jwt)
+                shift
+                tunnel_jwt="${1}"
+                shift
+                ;;
+            --headless)
+                shift
+                is_headless=true
+                ;;
             --web-version)
                 shift
                 docker_tags[web]="${1}"
@@ -108,9 +165,9 @@ function check_arguments() {
     done
 
     # Validate required parameters
-    if [[ -z "${tank_model}" || -z "${plc_model}" || -z "${serial_number}" || -z "${license_key}" ]]
+    if [[ -z "${tank_model}" || -z "${plc_model}" || -z "${serial_number}" || -z "${license_key}" || -z "${tunnel_jwt}" ]]
     then
-        echo -e "${c_red}>> ERROR: --tank-model, --plc-model, --serial-number, and --license-key are required arguments.${c_rst}" 2>/dev/null
+        echo -e "${c_red}>> ERROR: --tank-model, --plc-model, --serial-number, --license-key and --tunnel-jwt are required arguments.${c_rst}" 2>/dev/null
         usage
         return 30
     fi
@@ -1079,6 +1136,8 @@ function install_panel() {
     declare mysql_root_password=""
     declare influxdb_password=""
     declare influxdb_token=""
+    declare ziti_identity=""
+    declare ziti_jwt=""
 
     umask 027
 
@@ -1176,12 +1235,14 @@ function install_panel() {
         mysql_root_password=$(/usr/bin/awk -F= '/^MYSQL_ROOT_PASSWORD/{print $2}' <<< "${old_env}" | /usr/bin/tr -d "'\n")
         influxdb_password=$(/usr/bin/awk -F= '/^DOCKER_INFLUXDB_INIT_PASSWORD/{print $2}' <<< "${old_env}" | /usr/bin/tr -d "'\n")
         influxdb_token=$(/usr/bin/awk -F= '/^DOCKER_INFLUXDB_INIT_ADMIN_TOKEN/{print $2}' <<< "${old_env}" | /usr/bin/tr -d "'\n")
+        ziti_jwt=$(/usr/bin/awk -F= '/^TUNNEL_JWT/{print $2}' <<< "${old_env}" | /usr/bin/tr -d "'\n")
     else
         jwt_secret=$(generate_password 128 | /usr/bin/tr -d '\n')
         mysql_password=$(generate_password 16 | /usr/bin/tr -d '\n')
         mysql_root_password=$(generate_password 16 | /usr/bin/tr -d '\n')
         influxdb_password=$(generate_password 16 | /usr/bin/tr -d '\n')
         influxdb_token=$(generate_password 32 | /usr/bin/tr -d '\n')
+        ziti_jwt="needs-reenrollment-contact-your-administrator"
     fi
 
     echo -e "${c_prpl}>> Downloading environment file ..${c_rst}"
@@ -1201,6 +1262,8 @@ function install_panel() {
         -e "s#__MYSQL_ROOT_PASSWORD__#${mysql_root_password}#g" \
         -e "s#__INFLUXDB_PASSWORD__#${influxdb_password}#g" \
         -e "s#__INFLUXDB_TOKEN__#${influxdb_token}#g" \
+        -e "s#__TUNNEL_IDENTITY__#${serial_number}#g" \
+        -e "s#__TUNNEL_JWT__#${ziti_jwt}#g" \
         "${pdir}/.env"
 
     echo -e "${c_prpl}>> Downloading database schema file ..${c_rst}"
@@ -1487,25 +1550,33 @@ function main() {
     declare -r create_user_rc="${?}"
     [ "${create_user_rc}" -ne 0 ] && return "${create_user_rc}"
 
-    install_kde
-    declare -r install_kde_rc="${?}"
-    [ "${install_kde_rc}" -ne 0 ] && return "${install_kde_rc}"
+    [ "${is_headless}" != "true" ] && {
+        install_kde
+        declare -r install_kde_rc="${?}"
+        [ "${install_kde_rc}" -ne 0 ] && return "${install_kde_rc}"
+    }
 
-    # install_gnome
-    # declare -r install_gnome_rc="${?}"
-    # [ "${install_gnome_rc}" -ne 0 ] && return "${install_gnome_rc}"
+    # [ "${is_headless}" != "true" ] && {
+    #     install_gnome
+    #     declare -r install_gnome_rc="${?}"
+    #     [ "${install_gnome_rc}" -ne 0 ] && return "${install_gnome_rc}"
+    # }
 
     install_panel
     declare -r install_panel_rc="${?}"
     [ "${install_panel_rc}" -ne 0 ] && return "${install_panel_rc}"
 
-    install_firefox
-    declare -r install_firefox_rc="${?}"
-    [ "${install_firefox_rc}" -ne 0 ] && return "${install_firefox_rc}"
+    [ "${is_headless}" != "true" ] && {
+        install_firefox
+        declare -r install_firefox_rc="${?}"
+        [ "${install_firefox_rc}" -ne 0 ] && return "${install_firefox_rc}"
+    }
 
-    # install_chromium
-    # declare -r install_chromium_rc="${?}"
-    # [ "${install_chromium_rc}" -ne 0 ] && return "${install_chromium_rc}"
+    # [ "${is_headless}" != "true" ] && {
+    #     install_chromium
+    #     declare -r install_chromium_rc="${?}"
+    #     [ "${install_chromium_rc}" -ne 0 ] && return "${install_chromium_rc}"
+    # }
 
     configure_crons
     declare -r configure_crons_rc="${?}"

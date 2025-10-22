@@ -1,7 +1,7 @@
 <header>
   <span style="display: inline-flex; align-items: center;">
-    <img src="assets/coolblock-logo.svg" width="48" height="48" style="margin-right: 5px;">
-    <h1>COOLBLOCK - BIOS Configuration</h1>
+    <img src="https://cdn.coolblock.com/coolblock.svg" width="48" height="48" style="margin-right: 5px;">
+    <h1>COOLBLOCK - BIOS Configuration - Advantech P1571Z-C6 V2.0(6650U)</h1>
   </span>
 </header>
 
