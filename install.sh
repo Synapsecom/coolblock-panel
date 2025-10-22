@@ -1136,7 +1136,6 @@ function install_panel() {
     declare mysql_root_password=""
     declare influxdb_password=""
     declare influxdb_token=""
-    declare ziti_identity=""
     declare ziti_jwt=""
 
     umask 027
