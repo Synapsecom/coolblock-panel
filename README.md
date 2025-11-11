@@ -114,3 +114,24 @@ Example healthcheck response with telemetry disabled:
 > Latency value is in ms
 
 The healthcheck endpoint should reply with http status code 200 when `redis`, local `influxdb`, `mysql` and `panel` are healthy, otherwise it responds with a 5xx status code.
+
+## Troubleshooting
+
+- `Error response from daemon: Get "https://<subhost>.coolblock.com/v2/": dial tcp: lookup <subhost>.coolblock.com on <dns-ip>:53: no such host` or `Error response from daemon: unknown: failed to resolve reference "<subhost>.coolblock.com/coolblock/panel-<component>:<version>": unexpected status from HEAD request to https://<subhost>.coolblock.com/v2/coolblock/panel-<component>/manifests/<version>: 530 <none>`
+
+  You are probably using an older deployment file with references to our old container registry. As of **11-Nov-25**, we' ve migrated our container images to [GitHub](https://github.com/orgs/synapsecom/packages).
+
+  Running the below command, will fix the issue:
+
+  ```bash
+  sed -i \
+      -e 's#registry.coolblock.com/coolblock/panel-web#ghcr.io/synapsecom/coolblock-panel-web#' \
+      -e 's#registry.coolblock.com/coolblock/panel-api#ghcr.io/synapsecom/coolblock-panel-api#' \
+      -e 's#registry.coolblock.com/coolblock/panel-proxy#ghcr.io/synapsecom/coolblock-panel-proxy#' \
+      -e 's#registry.coolblock.com/coolblock/panel-tunnel#ghcr.io/synapsecom/coolblock-panel-tunnel#' \
+      /home/coolblock/panel/docker-compose.yml
+
+  sudo systemctl restart coolblock-panel.service
+  ```
+
+  Finally, you probably need to update your license key (aka. access token) by contacting your System Administrator.
