@@ -16,7 +16,6 @@
 3. Run the bootstrap script to **install** or **upgrade** the stack:
 
    > The script prepares the project in /home/coolblock/panel and keeps database dumps in /home/coolblock/panel/backup.
-   > The license key is expiring every year for security and it is required to contact us for key rotation.
 
    <!-- <span style="display: inline-flex; align-items: center;">
       <img src="assets/warning-blue-circle.svg" width="32" height="32" style="margin-right: 5px;">
@@ -24,7 +23,14 @@
    </span> -->
 
    ```bash
-   curl -fsSL https://downloads.coolblock.com/panel/install.sh | bash -s -- --tank-model <tank_model> --plc-model <plc_model> --serial-number <serial_number> --license-key <license_key> --tunnel-jwt <tunnel_jwt> | tee /root/install.log  # specify --headless argument if tank model does not support touch panel
+   curl -fsSL https://downloads.coolblock.com/panel/install.sh \
+       | bash -s -- \
+           --tank-model <tank_model> \
+           --plc-model <plc_model> \
+           --serial-number <serial_number> \
+           --license-key <license_key> \
+           --tunnel-jwt <tunnel_jwt> \
+       | tee /root/install.log  # specify --headless argument if tank model does not support touch panel
    ```
 
    > For PLC model compatibility, refer to the below table.
