@@ -1,7 +1,7 @@
 ---
 services:
   proxy:
-    image: 'registry.coolblock.com/coolblock/panel-proxy:__PANEL_PROXY_VERSION__'
+    image: 'ghcr.io/synapsecom/coolblock-panel-proxy:__PANEL_PROXY_VERSION__'
     command:
       - '--global.checkNewVersion=false'
       - '--global.sendAnonymousUsage=false'
@@ -44,7 +44,7 @@ services:
       - 'coolblock-panel'
 
   frontend:
-    image: 'registry.coolblock.com/coolblock/panel-web:__PANEL_WEB_VERSION__'
+    image: 'ghcr.io/synapsecom/coolblock-panel-web:__PANEL_WEB_VERSION__'
     labels:
       - 'traefik.enable=true'
       - 'traefik.http.routers.frontend.rule=PathPrefix(`/`)'
@@ -99,7 +99,7 @@ services:
       - 'coolblock-panel'
 
   backend:
-    image: 'registry.coolblock.com/coolblock/panel-api:__PANEL_API_VERSION__'
+    image: 'ghcr.io/synapsecom/coolblock-panel-api:__PANEL_API_VERSION__'
     ## uncomment the below to expose internal API (insecure)
     # labels:
     #   - 'traefik.enable=true'
@@ -131,7 +131,7 @@ services:
       - 'coolblock-panel'
 
   worker-influxdb-read:
-    image: 'registry.coolblock.com/coolblock/panel-api:__PANEL_API_VERSION__'
+    image: 'ghcr.io/synapsecom/coolblock-panel-api:__PANEL_API_VERSION__'
     command:
       [
         'celery',
@@ -176,7 +176,7 @@ services:
       - 'coolblock-panel'
 
   worker-influxdb-write:
-    image: 'registry.coolblock.com/coolblock/panel-api:__PANEL_API_VERSION__'
+    image: 'ghcr.io/synapsecom/coolblock-panel-api:__PANEL_API_VERSION__'
     command:
       [
         'celery',
@@ -221,7 +221,7 @@ services:
       - 'coolblock-panel'
 
   worker-plc-read:
-    image: 'registry.coolblock.com/coolblock/panel-api:__PANEL_API_VERSION__'
+    image: 'ghcr.io/synapsecom/coolblock-panel-api:__PANEL_API_VERSION__'
     command:
       [
         'celery',
@@ -266,7 +266,7 @@ services:
       - 'coolblock-panel'
 
   worker-plc-write:
-    image: 'registry.coolblock.com/coolblock/panel-api:__PANEL_API_VERSION__'
+    image: 'ghcr.io/synapsecom/coolblock-panel-api:__PANEL_API_VERSION__'
     command:
       [
         'celery',
@@ -311,7 +311,7 @@ services:
       - 'coolblock-panel'
 
   worker-alert-checker:
-    image: 'registry.coolblock.com/coolblock/panel-api:__PANEL_API_VERSION__'
+    image: 'ghcr.io/synapsecom/coolblock-panel-api:__PANEL_API_VERSION__'
     command:
       [
         'celery',
@@ -356,7 +356,7 @@ services:
       - 'coolblock-panel'
 
   worker-alert-notifier:
-    image: 'registry.coolblock.com/coolblock/panel-api:__PANEL_API_VERSION__'
+    image: 'ghcr.io/synapsecom/coolblock-panel-api:__PANEL_API_VERSION__'
     command:
       [
         'celery',
@@ -401,7 +401,7 @@ services:
       - 'coolblock-panel'
 
   scheduler:
-    image: 'registry.coolblock.com/coolblock/panel-api:__PANEL_API_VERSION__'
+    image: 'ghcr.io/synapsecom/coolblock-panel-api:__PANEL_API_VERSION__'
     command:
       [
         'celery',
@@ -482,7 +482,7 @@ services:
       - 'coolblock-panel'
 
   tunnel:
-    image: "registry.coolblock.com/coolblock/panel-tunnel:latest"
+    image: "ghcr.io/synapsecom/coolblock-panel-tunnel:latest"
     env_file:
       - '.env'
     volumes:

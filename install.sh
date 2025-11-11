@@ -15,16 +15,11 @@ declare -r c_cyan='\033[01;36m'
 declare -r c_bold='\033[1m'
 declare -r c_dim='\033[2m'
 
-declare -r docker_registry="registry.coolblock.com"
-declare -Ar docker_images=(
-    ["web"]="coolblock/panel-web"
-    ["api"]="coolblock/panel-api"
-    ["proxy"]="coolblock/panel-proxy"
-)
 declare -A docker_tags=(
     ["web"]="latest"
     ["api"]="latest"
     ["proxy"]="latest"
+    ["tunnel"]="latest"
 )
 
 # overriden by args
@@ -63,7 +58,7 @@ function usage() {
     echo -e "      Unique UUID-formatted tank serial (e.g., 46dbd654-af57-11f0-b582-dbe46ff98f6d)"
     echo
     echo -e "  ${c_ylw}--license-key${c_rst} ${c_grn}<token>${c_rst}"
-    echo -e "      Docker registry access token (e.g., snc-git-1234567890qwerty)"
+    echo -e "      Docker registry access token (e.g., ghp_1234567890qwerty)"
     echo
     echo -e "  ${c_ylw}--tunnel-jwt${c_rst} ${c_grn}<jwt>${c_rst}"
     echo -e "      Zero-Trust JWT token required for telemetry"
@@ -83,6 +78,9 @@ function usage() {
     echo
     echo -e "  ${c_ylw}--proxy-version${c_rst} ${c_grn}[latest|dev|x.x.x]${c_rst}  ${c_dim}(default: ${c_cyan}latest${c_dim})${c_rst}"
     echo -e "      Proxy component version"
+    echo
+    echo -e "  ${c_ylw}--tunnel-version${c_rst} ${c_grn}[latest|dev|x.x.x]${c_rst}  ${c_dim}(default: ${c_cyan}latest${c_dim})${c_rst}"
+    echo -e "      Tunnel component version"
     echo
 
     # Example section
@@ -150,6 +148,11 @@ function check_arguments() {
             --proxy-version)
                 shift
                 docker_tags[proxy]="${1}"
+                shift
+                ;;
+            --tunnel-version)
+                shift
+                docker_tags[tunnel]="${1}"
                 shift
                 ;;
             -h|--help)
@@ -1211,6 +1214,7 @@ function install_panel() {
         -e "s#__PANEL_WEB_VERSION__#${docker_tags[web]}#g" \
         -e "s#__PANEL_API_VERSION__#${docker_tags[api]}#g" \
         -e "s#__PANEL_PROXY_VERSION__#${docker_tags[proxy]}#g" \
+        -e "s#__PANEL_TUNNEL_VERSION__#${docker_tags[tunnel]}#g" \
         "${pdir}/docker-compose.yml"
 
     echo -e "${c_prpl}>> Pulling Docker images (if available) ..${c_rst}"

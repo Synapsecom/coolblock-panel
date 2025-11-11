@@ -9,7 +9,7 @@
 
 ## Getting started
 
-1. Configure BIOS by following the below guides based on mini PC model
+1. Configure BIOS by following the below guides based on Mini PC model
    1. [Beelink MINI S12 Pro (N100)](guides/bios/beelink-mini-s12-pro/configuration.md)
    2. [Advantech P1571Z-C6 V2 (6650U)](guides/bios/advantech-p1571z-c6-v2/configuration.md)
 2. Install latest Ubuntu Server 24.04 LTS by following [this guide](guides/iso.md).
