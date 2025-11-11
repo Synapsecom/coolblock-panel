@@ -135,3 +135,17 @@ The healthcheck endpoint should reply with http status code 200 when `redis`, lo
   ```
 
   Finally, you probably need to update your license key (aka. access token) by contacting your System Administrator.
+
+- `proxy-1  | 2025-11-11T20:13:17Z ERR Provider error, retrying in 2.018153525s error="Error response from daemon: client version 1.24 is too old. Minimum supported API version is 1.44, please upgrade your client to a newer version" providerName=docker`
+
+  There is a known bug for Docker version `29.0.0`, see [here](https://github.com/traefik/traefik/issues/12253). You can fix it by executing the below snippet:
+
+  ```bash
+  {
+    echo "[Service]"
+    echo "Environment=DOCKER_MIN_API_VERSION=1.24"
+  } > /etc/systemd/system/docker.service.d/override.conf
+
+  sudo systemctl daemon-reload
+  sudo systemctl restart docker
+  ```
