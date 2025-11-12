@@ -144,7 +144,7 @@ The healthcheck endpoint should reply with http status code 200 when `redis`, lo
   {
     echo "[Service]"
     echo "Environment=DOCKER_MIN_API_VERSION=1.24"
-  } > /etc/systemd/system/docker.service.d/override.conf
+  } | sudo tee /etc/systemd/system/docker.service.d/override.conf
 
   sudo systemctl daemon-reload
   sudo systemctl restart docker
