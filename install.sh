@@ -331,7 +331,7 @@ function install_prerequisites() {
         git curl wget \
         jq yq \
         ca-certificates openssl gpg \
-        mariadb-client \
+        mariadb-client apache2-utils \
         libcanberra-gtk-module libcanberra-gtk3-module
 
     return 0
