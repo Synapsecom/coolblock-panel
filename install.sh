@@ -1140,6 +1140,7 @@ function install_panel() {
     declare influxdb_password=""
     declare influxdb_token=""
     declare ziti_jwt=""
+    declare telemetry_svc_hash=""
 
     umask 027
 
@@ -1316,6 +1317,11 @@ function install_panel() {
             echo -e "${c_ylw}>> Waiting for database to become healthy .."
             /usr/bin/sleep 1
         done
+
+        echo -e "${c_prpl}>> Creating telemetry service account ..${c_rst}"
+        telemetry_svc_hash=$(/usr/bin/htpasswd -nbBC 10 telemetry $(echo -n "${serial_number}" | /usr/bin/base64 -w 0) | /usr/bin/cut -d: -f2 | /usr/bin/head -n1)
+        /usr/bin/sudo -u coolblock /usr/bin/mysql --defaults-file=/home/coolblock/.my.cnf coolblock-panel -Bsqe \
+            "INSERT INTO users (username, password, pin, role) VALUES ('telemetry', '${telemetry_svc_hash}', '9999', 'admin');"
     fi
 
     echo -e "${c_prpl}>> Creating Systemd service for Coolblock Panel Core ..${c_rst}"
