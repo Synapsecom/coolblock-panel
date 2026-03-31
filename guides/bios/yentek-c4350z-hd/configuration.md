@@ -12,7 +12,7 @@
 3. `Advanced` -> `ACPI Settings` -> Enable Hibernation: **Disabled**
 4. `Advanced` -> `ACPI Settings` -> ACPI Sleep State: **Suspend Disabled**
 5. `Advanced` -> `Miscellaneous Configuration` -> Restore AC Power Loss: **Power On**
-6. `Advanced` -> `CSM Configuration` -> Boot option filter: **UEFI and Legacy** (Change it to UEFI when OS is installed to bypass the issue with the vanishing NVMe drive)
+6. `Advanced` -> `CSM Configuration` -> Boot option filter: **UEFI and Legacy**
 7. `Chipset` -> `System Agent (SA) Configuration` -> `Graphics Configuration` -> DVMT Total Gfx Mem: **128M**
 8. `Chipset` -> `System Agent (SA) Configuration` -> Control Iommu Pre-boot Behavior: **Disable IOMMU**
 9. `Chipset` -> `System Agent (SA) Configuration` -> VT-d: **Disabled**
