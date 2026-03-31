@@ -10,7 +10,7 @@
 1. **Disable** `Advanced` -> `CPU Configuration` -> `Intel (VMX) Virtualization Technology`
 2. Navigate to `Advanced` -> `ACPI Settings`
    1. **Disable** `Enable Hibernation`
-   2. **Suspend Disable** `ACPI Sleep State`
+   2. **Disable** `ACPI Sleep State` (set to Suspend Disabled)
 3. Navigate to `Advanced` -> `CSM conf`
     1. **Disable** `CSM Support`
 4. Navigate to `Advanced` -> `Network Stack Configuration`

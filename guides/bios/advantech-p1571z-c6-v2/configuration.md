@@ -13,11 +13,10 @@
    2. **Disable** `Enable Hibernation`
    3. **Disable** `ACPI Sleep State`
    4. **Disable** `S3 Video Repost`
-3. Navigate to `Advanced` -> `ACPI Settings`
+3. Navigate to `Advanced` -> `Power Management`
    1. **Disable** `Resume On RTC Alarm`
    2. **Set** `Restore AC Power Loss` to `Last State`
    3. **Disable** `Watchdog Controller`
-   4. **Disable** `Resume On RTC Alarm`
 4. Navigate to `Advanced` -> `USB Configuration` and **Enable** everything
 5. Navigate to `Advanced` -> `Network Stack Configuration` and **Disable** the whole stack
 6. Navigate to `Advanced` -> `CSM Configuration` and **Disable** CSM Support

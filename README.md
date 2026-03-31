@@ -9,14 +9,14 @@
 
 ## Getting started
 
-1. Configure BIOS by following the below guides based on Mini PC model
+1. Configure BIOS per your Mini PC model:
    1. [Beelink MINI S12 Pro (N100)](guides/bios/beelink-mini-s12-pro/configuration.md)
    2. [Advantech P1571Z-C6 V2 (6650U)](guides/bios/advantech-p1571z-c6-v2/configuration.md)
    3. [Yentek C4350Z-HD (i5-10210)](guides/bios/yentek-c4350z-hd/configuration.md)
-2. Install latest Ubuntu Server 24.04 LTS by following [this guide](guides/iso.md).
+2. Install Ubuntu Server 24.04 LTS following [this guide](guides/iso.md).
 3. Run the bootstrap script to **install** or **upgrade** the stack:
 
-   > The script prepares the project in /home/coolblock/panel and keeps database dumps in /home/coolblock/panel/backup.
+   > Installs to `/home/coolblock/panel`. Database backups are stored in `/home/coolblock/panel/backup`.
 
    <!-- <span style="display: inline-flex; align-items: center;">
       <img src="assets/warning-blue-circle.svg" width="32" height="32" style="margin-right: 5px;">
@@ -34,16 +34,16 @@
        | tee /root/install.log  # specify --headless argument if tank model does not support touch panel
    ```
 
-   > For PLC model compatibility, refer to the below table.
+   > PLC model compatibility:
 
    | Tank Model | PLC Model                          |
    | ---------- | ---------------------------------- |
    | `x110`     | `Carel c.pCO mini (proto:modbus)`  |
    | `x520`     | `Siemens S7-1200 (proto:profinet)` |
 
-4. Login with the default credentials
+4. Log in with default credentials
 
-   > MUST be changed afterwards `Gear Icon -> Change Password` and `Gear Icon -> Change PIN`
+   > Change these immediately via `Gear Icon -> Change Password` and `Gear Icon -> Change PIN`
 
    | Username | Password | PIN  |
    | -------- | -------- | ---- |
@@ -51,22 +51,22 @@
 
 ## Administration
 
-- Services lifecycle
+- Service lifecycle
 
   ```bash
-  sudo systemctl start coolblock-panel.service  # to start the services
-  sudo systemctl restart coolblock-panel.service  # to restart the services
-  sudo systemctl stop coolblock-panel.service  # to stop the services
+  sudo systemctl start coolblock-panel.service
+  sudo systemctl restart coolblock-panel.service
+  sudo systemctl stop coolblock-panel.service
   ```
 
-- Connecting to relational database
+- Connect to MySQL
 
   ```bash
   # as coolblock user
   mysql --defaults-file=~/.my.cnf coolblock-panel
   ```
 
-- Taking backups of relational database
+- Back up MySQL
 
   ```bash
   # as coolblock user
@@ -74,24 +74,24 @@
   mysqldump --defaults-file=~/.my.cnf --databases coolblock-panel > adhoc-coolblock-panel_$(date +%Y%m%d_%H%M%S).sql
   ```
 
-- Connecting to Panel (remotely)
+- Remote Panel access
 
-  > You will be prompted with username and password instead of PIN.
+  > Prompts for username/password instead of PIN.
 
-  Open your browser and navigate to [https://panel-pc-ip-or-fqdn:10443](https://panel-pc-ip-or-fqdn:10443).
+  Navigate to [https://panel-pc-ip-or-fqdn:10443](https://panel-pc-ip-or-fqdn:10443).
 
-- Connecting to time-series database (remotely)
+- Remote InfluxDB access
 
-  > Login with username `coolblock` and the random generated password which can be found at `DOCKER_INFLUXDB_INIT_PASSWORD` variable in `/home/coolblock/panel/.env` file.
+  > Username: `coolblock`. Password: value of `DOCKER_INFLUXDB_INIT_PASSWORD` in `/home/coolblock/panel/.env`.
 
-  Open your browser and navigate to [https://panel-pc-ip-or-fqdn:8086](https://panel-pc-ip-or-fqdn:8086).
+  Navigate to [https://panel-pc-ip-or-fqdn:8086](https://panel-pc-ip-or-fqdn:8086).
 
 ## Monitoring
 
-The stack exposes a healthcheck endpoint at `/backend/health` that accepts an optional argument `?metrics=1` which will expose all services metrics for you.
-We highly recommend you to scrape/parse this endpoint (with zabbix/nagios etc..) in order to monitor multiple installations with ease.
+The stack exposes a healthcheck endpoint at `/backend/health`. Append `?metrics=1` to include service metrics.
+Scrape this endpoint with Zabbix, Nagios, or similar tools to monitor multiple installations.
 
-Example healthcheck response with telemetry disabled:
+Example response (without metrics):
 
 ```json
 {
@@ -112,17 +112,17 @@ Example healthcheck response with telemetry disabled:
 }
 ```
 
-> Latency value is in ms
+> Latency is in milliseconds.
 
-The healthcheck endpoint should reply with http status code 200 when `redis`, local `influxdb`, `mysql` and `panel` are healthy, otherwise it responds with a 5xx status code.
+Returns HTTP 200 when `redis`, local `influxdb`, `mysql`, and `panel` are healthy; 5xx otherwise.
 
 ## Troubleshooting
 
 - `Error response from daemon: Get "https://<subhost>.coolblock.com/v2/": dial tcp: lookup <subhost>.coolblock.com on <dns-ip>:53: no such host` or `Error response from daemon: unknown: failed to resolve reference "<subhost>.coolblock.com/coolblock/panel-<component>:<version>": unexpected status from HEAD request to https://<subhost>.coolblock.com/v2/coolblock/panel-<component>/manifests/<version>: 530 <none>`
 
-  You are probably using an older deployment file with references to our old container registry. As of **11-Nov-25**, we' ve migrated our container images to [GitHub](https://github.com/orgs/synapsecom/packages).
+  The deployment file references the old container registry. As of **11-Nov-25**, container images are hosted on [GitHub Packages](https://github.com/orgs/synapsecom/packages).
 
-  Running the below command, will fix the issue:
+  Fix by running:
 
   ```bash
   sed -i \
@@ -135,11 +135,11 @@ The healthcheck endpoint should reply with http status code 200 when `redis`, lo
   sudo systemctl restart coolblock-panel.service
   ```
 
-  Finally, you probably need to update your license key (aka. access token) by contacting your System Administrator.
+  You may also need to update your license key (access token). Contact your system administrator.
 
 - `proxy-1  | 2025-11-11T20:13:17Z ERR Provider error, retrying in 2.018153525s error="Error response from daemon: client version 1.24 is too old. Minimum supported API version is 1.44, please upgrade your client to a newer version" providerName=docker`
 
-  There is a known bug for Docker version `29.0.0`, see [here](https://github.com/traefik/traefik/issues/12253). You can fix it by executing the below snippet:
+  Known bug in Docker `29.0.0` — see [traefik/traefik#12253](https://github.com/traefik/traefik/issues/12253). Fix:
 
   ```bash
   {
