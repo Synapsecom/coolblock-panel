@@ -1145,7 +1145,7 @@ function install_panel() {
     umask 027
 
     echo -e "${c_prpl}>> Validating license ..${c_rst}"
-    docker_login=$(echo "${license_key}" | /usr/bin/sudo -u coolblock /usr/bin/docker login --username "${serial_number}" --password-stdin registry.coolblock.com 2>&1)
+    docker_login=$(echo "${license_key}" | /usr/bin/sudo -u coolblock /usr/bin/docker login --username "${serial_number}" --password-stdin ghcr.io 2>&1)
     if ! /usr/bin/grep -qi "login succeed" <<< "${docker_login}"
     then
         echo -e "${c_red}>> ERROR: Invalid license. Please contact Coolblock staff.${c_rst}" 2>/dev/null
