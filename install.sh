@@ -1356,7 +1356,7 @@ function configure_grub() {
 
     echo -e "${c_prpl}>> Configuring GRUB ..${c_rst}"
     /usr/bin/sed -i \
-        -e 's#^GRUB_CMDLINE_LINUX_DEFAULT=.*$#GRUB_CMDLINE_LINUX_DEFAULT="quiet splash ipv6.disable=1 ipv6.disable_ipv6=1 net.ifnames=0 biosdevname=0"#g' \
+        -e 's#^GRUB_CMDLINE_LINUX_DEFAULT=.*$#GRUB_CMDLINE_LINUX_DEFAULT="quiet splash ipv6.disable=1 ipv6.disable_ipv6=1 net.ifnames=0 biosdevname=0 nvme_core.default_ps_max_latency_us=0 reboot=pci"#g' \
         /etc/default/grub
 
     if ! /usr/sbin/update-grub
